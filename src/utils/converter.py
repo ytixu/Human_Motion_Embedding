@@ -157,7 +157,6 @@ def rotmat2euler( R ):
 # these are all copied form
 # https://github.com/matthew-brett/transforms3d/blob/master/transforms3d/euler.py
 
-
 def euler2mat(ai, aj, ak, axes='sxyz'):
 
   """Return rotation matrix from Euler angles and axis sequence.
@@ -241,7 +240,7 @@ def euler2mat(ai, aj, ak, axes='sxyz'):
   return M
 
 def euler2rotmap(euler):
-  return euler2mat(euler[0], euler[1], euler[2])
+  return euler2mat(euler[2], euler[1], euler[0])
 
 #################################
 ####### Foward kinematics #######
@@ -333,14 +332,13 @@ def revert_coordinate_space(channels, R0, T0, mat_type='expmap'):
     R = R_diff.dot( R_prev )
 
     #### modified here
-    func = rotmat2expmap
     if mat_type == 'euler':
-      func = rotmat2euler
-
-    channels_rec[ii, rootRotInd], bad_quad = func(R)
+      channels_rec[ii, rootRotInd] = rotmat2euler(R)
+    else:
     ####end
-    if bad_quad:
-      print ii
+      channels_rec[ii, rootRotInd], bad_quad = rotmat2expmap(R)
+      if bad_quad:
+        print ii
 
     T = T_prev + ((R_prev.T).dot( np.reshape(channels[ii,:3],[3,1]))).reshape(-1)
     channels_rec[ii,:3] = T
@@ -420,10 +418,12 @@ def sequence_expmap2euler(data):
 
 def sequence_something2xyz__(data, data_type='expmap'):
   '''
-  Convert a sequence of exponential map to euclidean space using FK
-  Borrowed from:
+  Convert a sequence of exponential map or euler to euclidean space using FK
+  Borrowed from
   https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/forward_kinematics.py#L156
   '''
+  data[:,:6] = 0 # remove global rotation and translation
+
   nframes, _ = data.shape
   xyz = np.zeros((nframes, 96))
 
@@ -447,13 +447,19 @@ def sequence_euler2xyz(data):
 # relevant_coords = [0, 1, 2, 3, 6, 7, 8, 12, 13, 14, 15, 17, 18, 19, 25, 26, 27]
 
 def animate(xyz):
+  '''
+  Animate motion in euclidean
+  Borrowed from
+  https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/forward_kinematics.py#L156
+  '''
   import viz
   import matplotlib.pyplot as plt
   fig = plt.figure()
   ax = plt.gca(projection='3d')
   ob = viz.Ax3DPose(ax)
 
-  for i in range(50): #xyz.shape[0]):
+  # modify this to increase the number of frames to animate
+  for i in range(min(150, xyz.shape[0])):
     ob.update( xyz[i,:] )
     plt.show(block=False)
     fig.canvas.draw()
