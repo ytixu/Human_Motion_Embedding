@@ -77,20 +77,15 @@ def readCSVasFloat_for_validation(filename, action, subact):
 	'''
 	with open(filename, 'r') as csvfile:
 		lines = np.array(list(csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)))
-		# data_dim = lines.shape[-1]
 
 		# (from una-dinosauria/human-motion-prediction.seq2seq_model.get_batch_srnn)
 		frames = find_indices_srnn( action, subact )
-		# returnArray = np.zeros((len(frames), 300, data_dim))
 
 		# 150 frames (as in una-dinosauria/human-motion-prediction.seq2seq_model.get_batch_srnn)
 		# 50 for the conditioned sequence when duing motion prediction
 		for i, idx in enumerate(frames):
 			# we skipped every second frame
 			yield lines[2*idx:2*(idx+150)]
-			# returnArray[i,:,:data_dim] = lines[2*idx:2*(idx+150)]
-
-	# return returnArray
 
 def load_data(path_to_dataset, subjects, actions, func=readCSVasFloat):
 	'''

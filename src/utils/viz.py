@@ -1,3 +1,8 @@
+'''
+Copied from
+https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/viz.py
+'''
+
 """Functions to visualize human poses"""
 
 import matplotlib.pyplot as plt
