@@ -1,7 +1,8 @@
 import argparse
 import csv
-import json
 import glob
+import json
+
 import numpy as np
 from tqdm import tqdm
 
@@ -242,7 +243,9 @@ def whitening(to_type='euler'):
 	 		'data_std':data_std.tolist(),
 	 		'dim_to_ignore':dimensions_to_ignore,
 	 		'dim_to_use':dimensions_to_use,
-			'action_list':{a:i for i,a in enumerate(ACTIONS)} # this is added for convenience
+	 		 # these are added for convenience
+			'action_list':{a:i for i,a in enumerate(ACTIONS)},
+			'data_dim': data.shape[-1]
 	 	}, param_file)
 
 
