@@ -231,7 +231,7 @@ def whitening(to_type='euler'):
 	dimensions_to_ignore = range(6)+list(np.where(data_std < 1e-4)[0])
 	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])[6:]
 
-	print len(dimensions_to_use), dimensions_to_use
+	print 'Used dimensions:', len(dimensions_to_use), dimensions_to_use
 	# For euler:
 	# 48, [6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
 
@@ -243,9 +243,8 @@ def whitening(to_type='euler'):
 	 		'data_std':data_std.tolist(),
 	 		'dim_to_ignore':dimensions_to_ignore,
 	 		'dim_to_use':dimensions_to_use,
-	 		 # these are added for convenience
-			'action_list':{a:i for i,a in enumerate(ACTIONS)},
-			'data_dim': data.shape[-1]
+	 		 # this is added for convenience
+			'action_list':{a:i for i,a in enumerate(ACTIONS)}
 	 	}, param_file)
 
 
@@ -257,6 +256,6 @@ if __name__ == '__main__':
 
 	args = vars(ap.parse_args())
 
-	convert(args['type'], args['visualize'])
+	#convert(args['type'], args['visualize'])
 	if not args['visualize']:
 		whitening(args['type'])

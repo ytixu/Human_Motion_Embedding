@@ -22,7 +22,7 @@ def __data_generator(data_dir, stat, args):
 	Return only the used_dims + one hot label (if applicable)
 	'''
 	t = args['timesteps']
-	for f in glob.glob(data_dir+'/test/'):
+	for f in glob.glob(data_dir+'/test/*.npy'):
 		data = np.load(f)[:,stat['dim_to_use']]
 		n,d = data.shape
 		n = n-t+1
@@ -51,34 +51,32 @@ def __data_generator_random(data_dir, stat, args):
 	t,b = args['timesteps'], args['generator_size']
 	data = {}
 	sample_n = 0
-	files = glob.glob(data_dir+'/train/')
 
-	for i, f in enumerate(files):
+	for i, f in enumerate(glob.glob(data_dir+'/train/*.npy')):
 		data[i] = (np.load(f)[:,stat['dim_to_use']], __get_action_from_file(f))
 		sample_n += 1
-
-	files = [__get_action_from_file(files)]
 
 	conseq_n = 5
 	l = 0
 	if args['supervised']:
 		l = len(args['action_list'])
-	x = np.zeros((b,t,args['data_dim']+l))
+	x = np.zeros((b,t,len(stat['dim_to_use'])+l))
 
 	for i in range(args['iterations']):
 		sample_idx = np.random.choice(sample_n, b/conseq_n)
 
 		for j,sample_i in enumerate(sample_idx):
-			n,d = data[sample_i].shape
+			sub_data, name = data[sample_i]
+			n,d = sub_data.shape
 			n = n - conseq_n - t + 1
 
 			rand_idx = np.random.choice(n)
 			for k in range(conseq_n):
-				x[j*conseq_n+k,:,:d] = data[sample_i][rand_idx+k:rand_idx+k+t]
+				x[j*conseq_n+k,:,:d] = sub_data[rand_idx+k:rand_idx+k+t]
 
 			if args['supervised']:
 				name = __get_action_from_file(f)
-				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['action_list'][files[sample_i]]] = 1
+				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['action_list'][name]] = 1
 
 		yield x
 
@@ -99,7 +97,7 @@ def __get_model_path_name(model_name, args, file_type):
 
 	opt_name = __format_file_name(args['optimizers'])
 	return'%s/t%d_l%d_u%d_loss-%s_opt-%s_%d.%s'%(
-		output_name, args['timesteps'], args['latent_dim'], args['unit_timesteps']
+		output_name, args['timesteps'], args['latent_dim'], args['unit_timesteps'],
 		args['loss_func'], opt_name, time.time(), ext)
 
 def get_parse(model_name, mode):
@@ -108,11 +106,11 @@ def get_parse(model_name, mode):
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
 	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator.', default=10000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
-	ap.add_argument('-w', '--whitening_method', required=False, help='Whitening method.', type='norm_pi', choices=whmtd_list)
+	ap.add_argument('-w', '--whitening_method', required=False, help='Whitening method.', default='norm_pi', choices=whmtd_list)
 
 	ap.add_argument('-lp', '--load_path', required=False, help='Model path')
 	ap.add_argument('-sp', '--save_path', required=False, help='Model save path')
-	ap.add_argument('-log', '--log_path', required=False, help='Log file for loss history', default=get_log_name(model_name))
+	ap.add_argument('-log', '--log_path', required=False, help='Log file for loss history')
 
 	ap.add_argument('-t', '--timesteps', required=False, help='Total timestep size', default=40, type=int)
 	ap.add_argument('-ut', '--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
@@ -138,8 +136,9 @@ def get_parse(model_name, mode):
 		data_types = ['input_data', 'output_data']
 	for t in data_types:
 		stats = __get_stats(args[t])
-		args[data_type+'_stats'] = {}
-		for k in ['data_mean', 'data_std', 'dim_to_use', 'data_dim']:
+		t = t+'_stats'
+		args[t] = {}
+		for k in ['data_mean', 'data_std', 'dim_to_use']:
 			args[t][k] = stats[k]
 
 	if args['supervised']:
@@ -148,13 +147,16 @@ def get_parse(model_name, mode):
 	if mode == 'train':
 		return args, __data_generator_random(args['input_data'], args['input_data_stats'], args)
 
+	assert('load_path' in args)
 	return args, __data_generator(args['input_data'], args['input_data_stats'], args)
 
 
 if __name__ == '__main__':
-	args, data_iter = get_parse('TEST', 'train')
-	print args
+	for mode in ['train', 'test']:
+		args, data_iter = get_parse('TEST', mode)
+		print args
+		for x in data_iter:
+			print 'sample shape', x.shape
+			break
 
-	for x in data_iter:
-		print x.shape
 
