@@ -5,8 +5,12 @@ import keras.layers as K_layer
 from keras.models import Model
 from keras import optimizers
 
+RNN_UNIT = None
+
 class Seq2Seq:
 	def __init__(self, args):
+		global RNN_UNIT
+
 		self.model = None
 		self.encoder = None
 		self.decoder = None
@@ -14,7 +18,7 @@ class Seq2Seq:
 		self.timesteps_out = args['timesteps_out']
 		self.timesteps_in = args['timesteps_in']
 		self.latent_dim = args['latent_dim']
-		self.input_dim = args['input_data_stat']['data_dim']
+		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
 
 		self.loss_func = args['loss_func']
@@ -28,7 +32,7 @@ class Seq2Seq:
 		self.make_model()
 
 	def make_model(self):
-		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
+		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		encoded = RNN_UNIT(self.latent_dim)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))

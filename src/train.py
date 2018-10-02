@@ -2,8 +2,8 @@ import numpy as np
 from itertools import tee
 from sklearn import cross_validation
 
-from utils import parser
-from models import Seq2Seq
+from utils import parser, utils
+from models.seq2seq import Seq2Seq
 
 CV_SPLIT = 0.2
 RAND_EVAL = 500
@@ -32,10 +32,10 @@ def train(model, data_iter, valid_data, args):
 		# normalization
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		x, y = model.format_data(x)
-		norm_x, norm_y = self.format_data(norm_x)
+		norm_x, norm_y = model.format_data(norm_x)
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 
-		history = self.autoencoder.fit(x_train, y_train,
+		history = model.model.fit(x_train, y_train,
 					shuffle=True,
 					epochs=1,
 					batch_size=args['batch_size'],
@@ -43,8 +43,8 @@ def train(model, data_iter, valid_data, args):
 
 		rand_idx = np.random.choice(norm_x.shape[0], RAND_EVAL, replace=False)
 
-		mse = self.eval(norm_x[rand_idx], y[rand_idx])
-		mse_valid = self.validate(norm_x_valid, y_valid)
+		mse = eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
+		mse_valid = eval(model, norm_x_valid, y_valid, args, stats)
 
 		print 'MSE', np.mean(mse)
 		print 'MSE VALID', np.mean(mse_valid)
@@ -55,7 +55,7 @@ def train(model, data_iter, valid_data, args):
 		# 	spamwriter.writerow([new_loss, mse, mse_valid])
 
 
-if __name__ = '__main__':
-	args, data_iter, valid_data = get_parse('train')
-	model = (globals()[args['method']])()
+if __name__ == '__main__':
+	args, data_iter, valid_data = parser.get_parse('train')
+	model = (globals()[args['method_name']])(args)
 	train(model, data_iter, valid_data, args)

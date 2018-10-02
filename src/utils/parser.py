@@ -8,6 +8,14 @@ import numpy as np
 
 import utils
 
+# limit memory size
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.6
+set_session(tf.Session(config=config))
+
+
 # Get data and information on the data
 
 def __get_stats(data_dir):
@@ -86,16 +94,16 @@ def __load_validation_data(data_dir, stats, args):
 	'''
 	Load validation data into one matrix.
 	'''
-	files = glob.glob(data_dir+'/test/*_cond.npy')
+	files = glob.glob(data_dir+'/valid/*-cond.npy')
 	l = __label_dim(args)
 	d = stats['data_dim']
 	ti,to = args['timesteps_in'],args['timesteps_out']
-	x = np.zeros((len(files)*2,args['timesteps'],d+l))
+	x = np.zeros((len(files)*4,args['timesteps'],d+l))
 
 	for i, f in enumerate(files):
-		s,e = i*2,(i+1)*2
-		x[s:e,:ti,:d] = np.load(f)[:,-ti:]
-		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy')[:,:to]
+		s,e = i*4,(i+1)*4
+		x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
+		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
 
 	return x
 
@@ -111,6 +119,7 @@ def __get_model_path_name(args, file_type):
 		ext, sub_dir = 'csv', '/log'
 	output_name = args['method_name'].lower()+sub_dir
 	utils.output_dir(output_name)
+	print output_name
 
 	unit = 'gru'
 	if args['lstm']:
@@ -123,7 +132,7 @@ def __get_model_path_name(args, file_type):
 
 def get_parse(mode):
 	ap = argparse.ArgumentParser()
-	method_list = ['test', 'seq2seq']
+	method_list = ['test', 'Seq2Seq']
 	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=method_list)
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
@@ -166,28 +175,26 @@ def get_parse(mode):
 		t = t+'_stats'
 		args[t] = {
 			'dim_to_use': stats['dim_to_use'],
-			'data_mean': stats['data_mean'],
+			'data_mean': np.array(stats['data_mean']),
 			'data_dim': len(stats['dim_to_use']),
 			'orig_data_dim': len(stats['data_mean'])
 		}
 		for k in ['data_std', 'data_min', 'data_max']:
-			args[t][k] = stats[k][stats['dim_to_use']]
+			args[t][k] = np.array(stats[k])[stats['dim_to_use']]
 
 	if args['supervised']:
 		args['actions'] = stats['action_list']
 
 	if mode == 'train':
-		return args,
-			__data_generator_random(args['input_data'], args['input_data_stats'], args),
-			__load_validation_data(args['input_data'], args['input_data_stats'], args)
+		return args,__data_generator_random(args['input_data'], args['input_data_stats'], args),__load_validation_data(args['input_data'], args['input_data_stats'], args)
 
 	assert('load_path' in args)
-	return args, __data_generator(args['input_data'], args['input_data_stats'], args)
+	return args, __data_generator(args['input_data'], args['input_data_stats'], args), None
 
 
 if __name__ == '__main__':
 	for mode in ['train', 'test']:
-		args, data_iter = get_parse(mode)
+		args, data_iter, _ = get_parse(mode)
 		print args
 		for x in data_iter:
 			print 'sample shape', x.shape

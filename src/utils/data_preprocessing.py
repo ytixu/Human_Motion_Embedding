@@ -43,7 +43,7 @@ def readCSVasFloat(filename, action=None, subact=None):
 			returnArray.append(np.array([np.float32(x) for x in line]))
 
 	returnArray = np.array(returnArray)
-	yield returnArray
+	return returnArray
 
 def find_indices_srnn( action, subj ):
     '''
@@ -77,6 +77,7 @@ def readCSVasFloat_for_validation(filename, action, subact):
 	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/data_utils.py#L195
 	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/data_utils.py#L216
 	'''
+	data = [None]*4
 	with open(filename, 'r') as csvfile:
 		lines = np.array(list(csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)))
 
@@ -87,7 +88,8 @@ def readCSVasFloat_for_validation(filename, action, subact):
 		# 50 for the conditioned sequence when duing motion prediction
 		for i, idx in enumerate(frames):
 			# we skipped every second frame
-			yield lines[2*idx:2*(idx+150)]
+			data[i] = lines[2*idx:2*(idx+150)]
+	return np.array(data)
 
 def load_data(path_to_dataset, subjects, actions, func=readCSVasFloat):
 	'''
@@ -116,10 +118,15 @@ def load_data(path_to_dataset, subjects, actions, func=readCSVasFloat):
 
 				filename = '{0}/S{1}/{2}_{3}.txt'.format( path_to_dataset, subj, action, subact)
 
-				for action_sequence in func(filename, action, subact):
-					n, _ = action_sequence.shape
+				action_sequence = func(filename, action, subact)
+				if len(action_sequence.shape) > 2:
+					_,n,_ = action_sequence.shape
 					even_list = range(0, n, 2)
-					yield (subj, action, subact), action_sequence[even_list, :]
+					yield (subj, action, subact), action_sequence[:,even_list]
+				else:
+					n,_ = action_sequence.shape
+					even_list = range(0, n, 2)
+					yield (subj, action, subact), action_sequence[even_list]
 
 def load_validation(path_to_dataset, actions):
 	'''
@@ -132,7 +139,7 @@ def load_validation(path_to_dataset, actions):
 		k=(subject, action, subaction, 'even'), s1=50 conditioned sequence, s2=100 ground truth sequence
 	'''
 	for k, data_sequences in load_data(path_to_dataset, TEST_SUBJECT_ID, actions, readCSVasFloat_for_validation):
-		yield k, data_sequences[:50], data_sequences[50:]
+		yield k, data_sequences[:,:50], data_sequences[:,50:]
 
 def convert(to_type='euler', vis=False):
 	'''
@@ -160,31 +167,34 @@ def convert(to_type='euler', vis=False):
 	  	utils.create_dir(directory+'/test/')
   		utils.create_dir(directory+'/valid/')
 
-	#training set and test set
-	train_set = load_data(from_directory, TRAIN_SUBJECT_ID, ACTIONS)
-  	test_set = load_data(from_directory, TEST_SUBJECT_ID,  ACTIONS)
-	for data_name, data_set in [('train',train_set), ('test',test_set)]:
-		for k, x in data_set:
-			print 'save', k, x.shape
-			subject, action, subact = k
-			data = convert_to_type(x)
-			print data.shape
-			if not vis:
-				np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
+	if False:
+		#training set and test set
+		train_set = load_data(from_directory, TRAIN_SUBJECT_ID, ACTIONS)
+		test_set = load_data(from_directory, TEST_SUBJECT_ID,  ACTIONS)
+		for data_name, data_set in [('train',train_set), ('test',test_set)]:
+			for k, x in data_set:
+				print 'save', k, x.shape
+				subject, action, subact = k
+				data = convert_to_type(x)
+				print data.shape
+				if not vis:
+					np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
 
 	#validation for motion prediction
 	valid_set = load_validation(from_directory,  ACTIONS)
   	for k, cond, gt in valid_set:
   		subject, action, subact = k
   		for data_name, x in [('cond',cond), ('gt',gt)]:
-	  		data = convert_to_type(x)
+			data = np.copy(x)
+			for i in range(4):
+		  		data[i] = convert_to_type(x[i])
 			print data.shape
 			if not vis:
 				np.save(directory+'/valid/%s_%d_%d-%s.npy'%(action, subject, subact, data_name), data)
 
 		# This is for euler, you can change it to other parameterization
 		# Uncomment this to visualize the 2 sequence together
-		# converter.animate(converter.sequence_euler2xyz(np.concatenate([cond, gt], axis=0)))
+		# converter.animate(converter.sequence_euler2xyz(np.concatenate([cond[0], gt[0]], axis=0)))
 
 
 def __get_data(files):
@@ -243,8 +253,8 @@ def whitening(to_type='euler'):
 	 		'data_std':data_std.tolist(),
 	 		'dim_to_ignore':dimensions_to_ignore,
 	 		'dim_to_use':dimensions_to_use,
-	 		'data_max':np.max(data, axis=0)[dimensions_to_use].tolist(),
-		 	'data_min':np.min(data, axis=0)[dimensions_to_use].tolist(),
+	 		'data_max':np.max(data, axis=0).tolist(),
+		 	'data_min':np.min(data, axis=0).tolist(),
 	 		 # this is added for convenience
 			'action_list':{a:i for i,a in enumerate(ACTIONS)}
 	 	}, param_file)
@@ -258,6 +268,6 @@ if __name__ == '__main__':
 
 	args = vars(ap.parse_args())
 
-	#convert(args['type'], args['visualize'])
-	if not args['visualize']:
-		whitening(args['type'])
+	convert(args['type'], args['visualize'])
+	#if not args['visualize']:
+	#	whitening(args['type'])
