@@ -29,3 +29,8 @@ cd src/utils
 python data_preprocessing.py
 ```
 Default conversion to euler angle. See input options for other parameterizations and for visualization of the motions.
+
+3. Test `parser.py`
+```bash
+python parser.py -m test -id ../../data/h3.6m/euler
+```
