@@ -2,8 +2,9 @@
 
 ### Dependencies
 
-- Tensorflow 1.2.1
-- Keras 2.1.3
+- [Tensorflow](https://www.tensorflow.org/) 1.2
+- [Keras](https://keras.io/) 2.1
+- [Tqdm](https://github.com/noamraph/tqdm) (progress bar)
 
 ### Quickstart
 
