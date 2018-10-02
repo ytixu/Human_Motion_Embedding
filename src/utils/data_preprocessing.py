@@ -243,6 +243,8 @@ def whitening(to_type='euler'):
 	 		'data_std':data_std.tolist(),
 	 		'dim_to_ignore':dimensions_to_ignore,
 	 		'dim_to_use':dimensions_to_use,
+	 		'data_max':np.max(data, axis=0)[dimensions_to_use].tolist(),
+		 	'data_min':np.min(data, axis=0)[dimensions_to_use].tolist(),
 	 		 # this is added for convenience
 			'action_list':{a:i for i,a in enumerate(ACTIONS)}
 	 	}, param_file)
