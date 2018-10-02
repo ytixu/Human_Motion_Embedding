@@ -1,5 +1,6 @@
 import argparse
 import csv
+import json
 import glob
 import numpy as np
 from tqdm import tqdm
@@ -9,8 +10,10 @@ import utils
 
 DATA_DIR = '../../data/h3.6m/'
 
+# ids copied from https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L677
 TRAIN_SUBJECT_ID = [1,6,7,8,9,11]
 TEST_SUBJECT_ID = [5]
+# actions copied from https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L637
 ACTIONS = ["walking", "eating", "smoking", "discussion",  "directions",
               "greeting", "phoning", "posing", "purchases", "sitting",
               "sittingdown", "takingphoto", "waiting", "walkingdog",
@@ -196,6 +199,15 @@ def __get_data(files):
 	return data
 
 def whitening(to_type='euler'):
+	'''
+	Similar to https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/data_utils.py#L302
+	"""
+	Save statistics for whitening the data.
+	Also borrowed for SRNN code. Computes mean, stdev and dimensions to ignore.
+	https://github.com/asheshjain399/RNNexp/blob/srnn/structural_rnn/CRFProblems/H3.6m/processdata.py#L33
+	"""
+	'''
+
 	directory = DATA_DIR+to_type+'/train/'
 
 	files = glob.glob(directory+'*.npy')
@@ -204,20 +216,34 @@ def whitening(to_type='euler'):
 	data_mean = np.mean(data, axis=0)
 	data_std = np.std(data, axis=0)
 
-	dimensions_to_ignore = list(np.where(data_std < 1e-4)[0])
-	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])
+	'''
+	For euler:
+	We are ignoring all joints with no variance when computing the l2 error. Same as in
+	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L604
+	and https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L221
+	This is Martinez et al.'s comment:
+	# Now compute the l2 error. The following is numpy port of the error
+	# function provided by Ashesh Jain (in matlab), available at
+	# https://github.com/asheshjain399/RNNexp/blob/srnn/structural_rnn/CRFProblems/H3.6m/dataParser/Utils/motionGenerationError.m#L40-L54
+	'''
+	# First 6 values are global rotation and translation, which are also ignored.
+	dimensions_to_ignore = range(6)+list(np.where(data_std < 1e-4)[0])
+	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])[6:]
 
 	print len(dimensions_to_use), dimensions_to_use
+	# For euler:
+	# 48, [6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
 
 	data_std[dimensions_to_ignore] = 1.0
 
-	# with open(directory+'stats'+parameterization+'.json', 'wb') as param_file:
-	# 	json.dump({
-	# 		'data_mean':data_mean.tolist(),
-	# 		'data_std':data_std.tolist(),
-	# 		'dim_to_ignore':dimensions_to_ignore,
-	# 		'dim_to_use':dimensions_to_use,
-	# 	}, param_file)
+	with open(DATA_DIR+to_type+'/stats.json', 'wb') as param_file:
+	 	json.dump({
+	 		'data_mean':data_mean.tolist(),
+	 		'data_std':data_std.tolist(),
+	 		'dim_to_ignore':dimensions_to_ignore,
+	 		'dim_to_use':dimensions_to_use,
+			'action_list':{a:i for i,a in enumerate(ACTIONS)} # this is added for convenience
+	 	}, param_file)
 
 
 if __name__ == '__main__':
@@ -228,6 +254,6 @@ if __name__ == '__main__':
 
 	args = vars(ap.parse_args())
 
-	# convert(args['type'], args['visualize'])
+	convert(args['type'], args['visualize'])
 	if not args['visualize']:
 		whitening(args['type'])

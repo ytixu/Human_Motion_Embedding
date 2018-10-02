@@ -12,7 +12,7 @@ def __format_file_name(a):
 	return '-'.join('-'.join(
 		a.strip('optimizers.').strip(')').split('(')).split(','))
 
-def get_model_path_name(model_name, args, file_type):
+def __get_model_path_name(model_name, args, file_type):
 	ext, sub_dir = 'hdf5', '/models'
 	if file_type == 'log':
 		ext, sub_dir = 'csv', '/log'
@@ -23,11 +23,6 @@ def get_model_path_name(model_name, args, file_type):
 	return'%s/t%d_l%d_u%d_loss-%s_opt-%s_%d.%s'%(
 		output_name, args['timesteps'], args['latent_dim'], args['unit_timesteps']
 		args['loss_func'], opt_name, time.time(), ext)
-
-# Get list of labels with the index for the 1-hot encoding
-def get_one_hot_labels(files):
-	labels = set(map(lambda x: os.path.basename(x).split('_')[0], files))
-	return {l:i for i,l in enumerate(labels)}, len(labels)
 
 
 def get_parse(model_name, labels=False):
@@ -57,9 +52,9 @@ def get_parse(model_name, labels=False):
 	args = vars(ap.parse_args())
 
 	if 'save_path' not in args:
-		args['save_path'] = get_model_path_name(model_name, args, 'save')
+		args['save_path'] = __get_model_path_name(model_name, args, 'save')
 	if 'log_path' not in args:
-		args['log_path'] = get_model_path_name(model_name, args, 'log')
+		args['log_path'] = __get_model_path_name(model_name, args, 'log')
 
 	if args['supervised']:
 
