@@ -16,9 +16,9 @@ TRAIN_SUBJECT_ID = [1,6,7,8,9,11]
 TEST_SUBJECT_ID = [5]
 # actions copied from https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L637
 ACTIONS = ["walking", "eating", "smoking", "discussion",  "directions",
-              "greeting", "phoning", "posing", "purchases", "sitting",
-              "sittingdown", "takingphoto", "waiting", "walkingdog",
-              "walkingtogether"]
+			  "greeting", "phoning", "posing", "purchases", "sitting",
+			  "sittingdown", "takingphoto", "waiting", "walkingdog",
+			  "walkingtogether"]
 
 def readCSVasFloat(filename, action=None, subact=None):
 	'''
@@ -46,29 +46,29 @@ def readCSVasFloat(filename, action=None, subact=None):
 	return returnArray
 
 def find_indices_srnn( action, subj ):
-    '''
-    Hard copy of the indices as produced in:
+	'''
+	Hard copy of the indices as produced in:
 	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/seq2seq_model.py#L478
-    """
-    Find the same action indices as in SRNN.
-    See https://github.com/asheshjain399/RNNexp/blob/master/structural_rnn/CRFProblems/H3.6m/processdata.py#L325
-    """
-    '''
-    return {'walking' : [[1087, 1145, 660, 201],[955, 332, 304, 54]],
-    'eating' : [[1426, 1087, 1329, 1145],[374, 156, 955, 332]],
-    'smoking' : [[1426, 1087, 1329, 1145],[1398, 1180, 955, 332]],
-    'discussion' : [[1426, 1398, 1180, 332],[2063, 1087, 1145, 1438]],
-    'directions' : [[1426, 1087, 1145, 1438],[374, 156, 332, 665]],
-    'greeting' : [[402, 63, 305, 121],[1398, 1180, 955, 332]],
-    'phoning' : [[1426, 1087, 1329, 332],[374, 156, 121, 414]],
-    'posing' : [[402, 63, 835, 955],[374, 156, 305, 121]],
-    'purchases' : [[1087, 955, 332, 304],[1180, 1145, 660, 201]],
-    'sitting' : [[1426, 1087, 1329, 1145],[1398, 1180, 955, 332]],
-    'sittingdown' : [[1426, 1087, 1145, 1438],[1398, 1180, 332, 1689]],
-    'takingphoto' : [[1426, 1180, 1145, 1438],[1087, 955, 332, 660]],
-    'waiting' : [[1426, 1398, 1180, 332],[2063, 1087, 1145, 1438]],
-    'walkingdog' : [[402, 63, 305, 332],[374, 156, 121, 414]],
-    'walkingtogether' : [[1087, 1329, 1145, 660],[1180, 955, 332, 304]]}[action][subj-1]
+	"""
+	Find the same action indices as in SRNN.
+	See https://github.com/asheshjain399/RNNexp/blob/master/structural_rnn/CRFProblems/H3.6m/processdata.py#L325
+	"""
+	'''
+	return {'walking' : [[1087, 1145, 660, 201],[955, 332, 304, 54]],
+	'eating' : [[1426, 1087, 1329, 1145],[374, 156, 955, 332]],
+	'smoking' : [[1426, 1087, 1329, 1145],[1398, 1180, 955, 332]],
+	'discussion' : [[1426, 1398, 1180, 332],[2063, 1087, 1145, 1438]],
+	'directions' : [[1426, 1087, 1145, 1438],[374, 156, 332, 665]],
+	'greeting' : [[402, 63, 305, 121],[1398, 1180, 955, 332]],
+	'phoning' : [[1426, 1087, 1329, 332],[374, 156, 121, 414]],
+	'posing' : [[402, 63, 835, 955],[374, 156, 305, 121]],
+	'purchases' : [[1087, 955, 332, 304],[1180, 1145, 660, 201]],
+	'sitting' : [[1426, 1087, 1329, 1145],[1398, 1180, 955, 332]],
+	'sittingdown' : [[1426, 1087, 1145, 1438],[1398, 1180, 332, 1689]],
+	'takingphoto' : [[1426, 1180, 1145, 1438],[1087, 955, 332, 660]],
+	'waiting' : [[1426, 1398, 1180, 332],[2063, 1087, 1145, 1438]],
+	'walkingdog' : [[402, 63, 305, 332],[374, 156, 121, 414]],
+	'walkingtogether' : [[1087, 1329, 1145, 660],[1180, 955, 332, 304]]}[action][subj-1]
 
 def readCSVasFloat_for_validation(filename, action, subact):
 	'''
@@ -106,8 +106,8 @@ def load_data(path_to_dataset, subjects, actions, func=readCSVasFloat):
 		func: function to read the data file
 	Yield
 		k=(subject, action, subaction, 'even'), v=(nxd) data
- 	"""
- 	'''
+	"""
+	'''
 	for subj in subjects:
 		for action_idx in np.arange(len(actions)):
 
@@ -145,8 +145,8 @@ def convert(to_type='euler', vis=False):
 	'''
 	Converting and saving the data in euler, euclidean or exmponential map
 	'''
-  	directory = DATA_DIR+to_type
-  	from_directory = DATA_DIR+'dataset'
+	directory = DATA_DIR+to_type
+	from_directory = DATA_DIR+'dataset'
 
 	def convert_to_type(x):
 		if to_type == 'expmap':
@@ -162,32 +162,31 @@ def convert(to_type='euler', vis=False):
 				converter.animate(x)
 		return x
 
-  	if not vis:
-	  	utils.create_dir(directory+'/train/')
-	  	utils.create_dir(directory+'/test/')
-  		utils.create_dir(directory+'/valid/')
+	if not vis:
+		utils.create_dir(directory+'/train/')
+		utils.create_dir(directory+'/test/')
+		utils.create_dir(directory+'/valid/')
 
-	if False:
-		#training set and test set
-		train_set = load_data(from_directory, TRAIN_SUBJECT_ID, ACTIONS)
-		test_set = load_data(from_directory, TEST_SUBJECT_ID,  ACTIONS)
-		for data_name, data_set in [('train',train_set), ('test',test_set)]:
-			for k, x in data_set:
-				print 'save', k, x.shape
-				subject, action, subact = k
-				data = convert_to_type(x)
-				print data.shape
-				if not vis:
-					np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
+	#training set and test set
+	train_set = load_data(from_directory, TRAIN_SUBJECT_ID, ACTIONS)
+	test_set = load_data(from_directory, TEST_SUBJECT_ID,  ACTIONS)
+	for data_name, data_set in [('train',train_set), ('test',test_set)]:
+		for k, x in data_set:
+			print 'save', k, x.shape
+			subject, action, subact = k
+			data = convert_to_type(x)
+			print data.shape
+			if not vis:
+				np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
 
 	#validation for motion prediction
 	valid_set = load_validation(from_directory,  ACTIONS)
-  	for k, cond, gt in valid_set:
-  		subject, action, subact = k
-  		for data_name, x in [('cond',cond), ('gt',gt)]:
+	for k, cond, gt in valid_set:
+		subject, action, subact = k
+		for data_name, x in [('cond',cond), ('gt',gt)]:
 			data = np.copy(x)
 			for i in range(4):
-		  		data[i] = convert_to_type(x[i])
+				data[i] = convert_to_type(x[i])
 			print data.shape
 			if not vis:
 				np.save(directory+'/valid/%s_%d_%d-%s.npy'%(action, subject, subact, data_name), data)
@@ -248,16 +247,109 @@ def whitening(to_type='euler'):
 	data_std[dimensions_to_ignore] = 1.0
 
 	with open(DATA_DIR+to_type+'/stats.json', 'wb') as param_file:
-	 	json.dump({
-	 		'data_mean':data_mean.tolist(),
-	 		'data_std':data_std.tolist(),
-	 		'dim_to_ignore':dimensions_to_ignore,
-	 		'dim_to_use':dimensions_to_use,
-	 		'data_max':np.max(data, axis=0).tolist(),
-		 	'data_min':np.min(data, axis=0).tolist(),
-	 		 # this is added for convenience
+		json.dump({
+			'data_mean':data_mean.tolist(),
+			'data_std':data_std.tolist(),
+			'dim_to_ignore':dimensions_to_ignore,
+			'dim_to_use':dimensions_to_use,
+			'data_max':np.max(data, axis=0).tolist(),
+			'data_min':np.min(data, axis=0).tolist(),
+			 # this is added for convenience
 			'action_list':{a:i for i,a in enumerate(ACTIONS)}
-	 	}, param_file)
+		}, param_file)
+
+
+def __running_average( actions_dict, actions, k, to_type ):
+	'''
+	Modifed from
+	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/baselines.py#L21
+	"""
+	Compute the error if we simply take the average of the last k frames.
+	Args
+		actions_dict: Dictionary where keys are the actions, and each entry has a
+									tuple of (enc_in, dec_out) poses.
+		actions: List of strings. The keys of actions_dict.
+		k:Integer. Number of frames to use for running average.
+		to_type: Parameterization type (euler, expmap or euclidean)
+	Returns
+		errs: a dictionary where, for each action, we have a 100-long list with the
+					error at each point in time.
+	"""
+	'''
+	errs = dict()
+
+	for action in actions:
+
+		# Get the lists for this action
+		enc_in, dec_out = actions_dict[action]
+		n,_,_ = dec_out.shape
+		ee = np.zeros(n)
+
+		for i in np.arange(n):
+			# convert to euler if needed
+			# use the same l2 error for euclidean
+			if to_type == 'expmap':
+				enc_in[i] = converter.sequence_expmap2euler(enc_in[i])
+				dec_out[i] = converter.sequence_expmap2euler(dec_out[i])
+
+			# The last frame
+			last_frames = enc_in[i, -k:]
+			last_frame[:,:6] = 0
+			avg = np.mean(last_frame, axis=0)
+			print agv
+
+			# Ignored indices
+			dec_out[:,:6] = 0
+			idx_to_use = np.where(np.std(dec_out, axis=0) > 1e-4)[0]
+			print idx_to_use
+
+			# Compute l2 error
+			ee[i] = np.power(dec_out[:,idx_to_use] - avg[idx_to_use], 2)
+			ee[i] = np.sum(ee, axis=1)
+			ee[i] = np.sqrt(ee)
+
+		errs[action] = np.mean(ee, axis=0)
+	return errs
+
+def get_baseline(to_type='euler'):
+	directory = DATA_DIR+to_type+'/valid/'
+
+	actions_dict = {}
+
+	for action in ACTIONS:
+		cond_seq = glob.glob(directory+'*-cond.npy')
+		gt_seq = glob.glob(directory+'*-gt.npy')
+		actions_dict[action] = (cond_seq, gt_seq)
+
+	# now, same as in
+	# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/baselines.py#L184
+	errs_constant_frame = __running_average(actions_dict, ACTIONS, 1, to_type)
+	running_average_2 = __running_average(actions_dict, ACTIONS, 2, to_type)
+	running_average_4 = __running_average(actions_dict, ACTIONS, 4, to_type)
+
+	print("=== Zero-velocity (running avg. 1) ===")
+	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
+	for action in ACTIONS:
+		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
+			errs_constant_frame[action][1], errs_constant_frame[action][3],
+			errs_constant_frame[action][7], errs_constant_frame[action][9] ))
+
+	print()
+	print("=== Runnning avg. 2 ===")
+	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
+	for action in ACTIONS:
+		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
+			running_average_2[action][1], running_average_2[action][3],
+			running_average_2[action][7], running_average_2[action][9] ))
+
+	print()
+	print("=== Runnning avg. 4 ===")
+	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
+	for action in ACTIONS:
+		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
+			running_average_4[action][1], running_average_4[action][3],
+			running_average_4[action][7], running_average_4[action][9] ))
+
 
 
 if __name__ == '__main__':
@@ -265,9 +357,13 @@ if __name__ == '__main__':
 	list_of_type = ['euler', 'euclidean', 'expmap']
 	ap.add_argument('-t', '--type', required=False, help='Choice of parameterization', default='euler', choices=list_of_type)
 	ap.add_argument('-v', '--visualize', action='store_true', help='Visualize the data only')
+	ap.add_argument('-b', '--baseline', action='store_true', help='Generate baseline results only')
 
 	args = vars(ap.parse_args())
 
-	convert(args['type'], args['visualize'])
-	#if not args['visualize']:
-	#	whitening(args['type'])
+	if args['baseline']:
+		get_baseline(args['type'])
+	else:
+		convert(args['type'], args['visualize'])
+		if not args['visualize']:
+			whitening(args['type'])

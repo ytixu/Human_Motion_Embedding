@@ -66,6 +66,7 @@ def recover(x, stats):
 # error
 
 SHORT_TERM_IDX = [1,3,7,9]
+LONG_TERM_IDX = [11,13,15,17,19,21,23,24]
 
 def euler_error(x, y, stats):
 	return np.mean(np.sqrt(np.sum(np.square(
