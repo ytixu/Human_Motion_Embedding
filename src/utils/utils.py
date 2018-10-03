@@ -10,7 +10,9 @@ def create_dir(directory):
 	    os.makedirs(directory)
 
 def output_dir(directory):
-	create_dir(OUTPUT_DIR+directory)
+	dir = OUTPUT_DIR+directory
+	create_dir(dir)
+	return dir
 
 # normalizations
 
@@ -67,4 +69,14 @@ SHORT_TERM_IDX = [1,3,7,9]
 
 def euler_error(x, y, stats):
 	return np.mean(np.sqrt(np.sum(np.square(
-		x[:,:,:stats['data_dim']], y[:,:,:stats['data_dim']]), -1)), 0)
+		x[:,:,:stats['data_dim']] - y[:,:,:stats['data_dim']]), -1)), 0)
+
+
+if __name__ == '__main__':
+	# unit testing
+	a = (np.random.rand(2,3,4)*2-1)*np.pi
+	stats = {'data_mean':np.zeros(4), 'dim_to_use':range(4), 'data_dim':4}
+	b = normalize(a, stats, 'norm_pi')
+	c = unormalize(b, stats, 'norm_pi')
+	print a-c
+	print euler_error(a,c, stats)

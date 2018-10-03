@@ -111,24 +111,23 @@ def __load_validation_data(data_dir, stats, args):
 
 def __format_file_name(a):
 	return '-'.join('-'.join(
-		a.strip('optimizers.').strip(')').split('(')).split(','))
+		a.strip(')').split('(')).split(','))
 
 def __get_model_path_name(args, file_type):
 	ext, sub_dir = 'hdf5', '/models'
 	if file_type == 'log':
 		ext, sub_dir = 'csv', '/log'
 	output_name = args['method_name'].lower()+sub_dir
-	utils.output_dir(output_name)
-	print output_name
+	output_name = utils.output_dir(output_name)
 
 	unit = 'gru'
 	if args['lstm']:
 		unit = 'lstm'
 
-	opt_name = __format_file_name(args['optimizers'])
-	return'%s/%s_t%d_l%d_u%d_loss-%s_opt-%s_%d.%s'%(
+	opt_name = __format_file_name(args['optimizer'])
+	return'%s/%s_t%d_l%d_u%d_loss-%s_opt-%s_%s_%d.%s'%(
 		output_name, unit, args['timesteps'], args['latent_dim'], args['unit_timesteps'],
-		args['loss_func'], opt_name, time.time(), ext)
+		args['loss_func'], opt_name, args['normalization_method'], time.time(), ext)
 
 def get_parse(mode):
 	ap = argparse.ArgumentParser()
@@ -153,8 +152,8 @@ def get_parse(mode):
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
-	ap.add_argument('-opt', '--optimizer', required=False, help='Optimizer and parameters', default='optimizers.Nadam(lr=0.001)')
-	ap.add_argument('-lr', '--learning_rate', required=False, help='Learning rate', default=0.001, type=float)
+	ap.add_argument('-opt', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
+	# ap.add_argument('-lr', '--learning_rate', required=False, help='Learning rate', default=0.001, type=float)
 	ap.add_argument('-lstm', '--lstm', action='store_true', help='Using LSTM instead of the default GRU')
 
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
@@ -162,13 +161,13 @@ def get_parse(mode):
 
 	args = vars(ap.parse_args())
 
-	if 'save_path' not in args:
+	if args[ 'save_path'] is None:
 		args['save_path'] = __get_model_path_name(args, 'save')
-	if 'log_path' not in args:
+	if args['log_path'] is None:
 		args['log_path'] = __get_model_path_name(args, 'log')
 
 	data_types = ['input_data']
-	if 'output_data' in args:
+	if 'output_data' in args and args['output_data'] is not None:
 		data_types = ['input_data', 'output_data']
 	for t in data_types:
 		stats = __get_stats(args[t])
@@ -186,6 +185,8 @@ def get_parse(mode):
 		args['actions'] = stats['action_list']
 
 	if mode == 'train':
+		# TODO: need to add output_data
+		args['optimizer'] = 'optimizers.'+args['optimizer']
 		return args,__data_generator_random(args['input_data'], args['input_data_stats'], args),__load_validation_data(args['input_data'], args['input_data_stats'], args)
 
 	assert('load_path' in args)
