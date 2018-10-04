@@ -282,8 +282,8 @@ def __running_average( actions_dict, actions, k, to_type ):
 
 		# Get the lists for this action
 		enc_in, dec_out = actions_dict[action]
-		n,_,_ = dec_out.shape
-		ee = np.zeros(n)
+		n,t,_ = dec_out.shape
+		ee = np.zeros((n, t))
 
 		for i in np.arange(n):
 			# convert to euler if needed
@@ -294,19 +294,17 @@ def __running_average( actions_dict, actions, k, to_type ):
 
 			# The last frame
 			last_frames = enc_in[i, -k:]
-			last_frame[:,:6] = 0
-			avg = np.mean(last_frame, axis=0)
-			print agv
+			last_frames[:,:6] = 0
+			avg = np.mean(last_frames, axis=0)
 
 			# Ignored indices
-			dec_out[:,:6] = 0
-			idx_to_use = np.where(np.std(dec_out, axis=0) > 1e-4)[0]
-			print idx_to_use
+			dec_out[i,:,:6] = 0
+			idx_to_use = np.where(np.std(dec_out[i], axis=0) > 1e-4)[0]
 
 			# Compute l2 error
-			ee[i] = np.power(dec_out[:,idx_to_use] - avg[idx_to_use], 2)
-			ee[i] = np.sum(ee, axis=1)
-			ee[i] = np.sqrt(ee)
+			x = np.power(dec_out[i][:,idx_to_use] - avg[idx_to_use], 2)
+			x = np.sum(x, axis=1)
+			ee[i] = np.sqrt(x)
 
 		errs[action] = np.mean(ee, axis=0)
 	return errs
@@ -317,8 +315,10 @@ def get_baseline(to_type='euler'):
 	actions_dict = {}
 
 	for action in ACTIONS:
-		cond_seq = glob.glob(directory+'*-cond.npy')
-		gt_seq = glob.glob(directory+'*-gt.npy')
+		cond_seq = __get_data([glob.glob(directory+action+'_*1-cond.npy')[0],
+					glob.glob(directory+action+'_*2-cond.npy')[0]])
+		gt_seq = __get_data([glob.glob(directory+action+'_*1-gt.npy')[0],
+				glob.glob(directory+action+'_*2-gt.npy')[0]])
 		actions_dict[action] = (cond_seq, gt_seq)
 
 	# now, same as in
