@@ -1,6 +1,3 @@
-import json
-
-import numpy as np
 import keras.layers as K_layer
 from keras.models import Model
 from keras import optimizers
@@ -38,10 +35,10 @@ class Seq2Seq:
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decoder_activation = 'tanh'
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_residual = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_rnn = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
-		decoded = decode_residual(decode_repete(encoded))
-		decoded_ = decode_residual(decode_repete(z))
+		decoded = decode_rnn(decode_repete(encoded))
+		decoded_ = decode_rnn(decode_repete(z))
 
 		self.encoder = Model(inputs, encoded)
 		self.decoder = Model(z, decoded_)
@@ -56,8 +53,15 @@ class Seq2Seq:
 	def load(self, load_path):
 		self.model.load_weights(load_path)
 
+	def load_embedding(self, data):
+		# no embedding
+		pass
+
 	def format_data(self, x):
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 
-	def predict(self, x):
+	def autoencode(self, x):
 		return self.model.predict(x)
+
+	def predict(self, x):
+		return np.concatenate([x,self.model.predict(x)], axis=1)

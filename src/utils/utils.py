@@ -72,6 +72,9 @@ def euler_error(x, y, stats):
 	return np.mean(np.sqrt(np.sum(np.square(
 		x[:,:,:stats['data_dim']] - y[:,:,:stats['data_dim']]), -1)), 0)
 
+def list_short_term(model, error):
+	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]
+	return error[idx]
 
 if __name__ == '__main__':
 	# unit testing

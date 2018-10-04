@@ -6,8 +6,10 @@ from utils import parser, utils
 from models.seq2seq import Seq2Seq
 
 CV_SPLIT = 0.2
-RAND_EVAL = 500
+RAND_EVAL = 1000
 LOSS = 1000
+
+SAVE_TO_DISK = True
 
 def __eval_loss(model, history, args):
 	'''
@@ -18,7 +20,8 @@ def __eval_loss(model, history, args):
 	new_loss = np.mean(history.history['loss'])
 	if new_loss < LOSS:
 		LOSS = new_loss
-		model.model.save_weights(args['save_path'], overwrite=True)
+		if SAVE_TO_DISK:
+			model.model.save_weights(args['save_path'], overwrite=True)
 		print 'Saved model - ', LOSS
 	return new_loss
 
@@ -27,6 +30,11 @@ def __eval(model, x, y, args, stats):
 	Compare results using l2 distance of the Euler angle.
 	TODO: need to adapt to expmap.
 	'''
+	y_pred = model.autoencode(x)
+	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+	return utils.euler_error(y, y_pred, stats)
+
+def __eval_pred(model, x, y, args, stats):
 	y_pred = model.predict(x)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return utils.euler_error(y, y_pred, stats)
@@ -59,20 +67,25 @@ def train(model, data_iter, valid_data, args):
 
 		new_loss = __eval_loss(model, history, args)
 		rand_idx = np.random.choice(norm_x.shape[0], RAND_EVAL, replace=False)
+		model.load_embedding(norm_x[rand_idx])
 
 		mse = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
-		mse_valid = __eval(model, norm_x_valid, y_valid, args, stats)
+		mse_test = __eval(model, norm_x_valid, y_valid, args, stats)
+		mse_valid = __eval_pred(model, norm_x_valid, valid_data, args, stats)
 
 		print 'MEAN TRAIN', np.mean(mse)
-		print 'MEAN VALID', np.mean(mse_valid)
-		print 'SHORT-TERM (80-160-320-400ms)', mse_valid[utils.SHORT_TERM_IDX] # TODO
+		print 'MEAN VALID', np.mean(mse_test)
+		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(mse_valid)
 
-		with open(args['log_path'], 'a+') as f:
-		 	spamwriter = csv.writer(f)
-		 	spamwriter.writerow([new_loss, mse, mse_valid])
+		if SAVE_TO_DISK:
+			with open(args['log_path'], 'a+') as f:
+			 	spamwriter = csv.writer(f)
+			 	spamwriter.writerow([new_loss, mse, mse_test, mse_valid])
 
 
 if __name__ == '__main__':
 	args, data_iter, valid_data = parser.get_parse('train')
+	SAVE_TO_DISK = not args['debug']
+
 	model = (globals()[args['method_name']])(args)
 	train(model, data_iter, valid_data, args)

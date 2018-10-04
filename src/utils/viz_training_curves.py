@@ -33,6 +33,13 @@ def __plot_training_curve(args):
 		if iter_n > -1:
 			data = data[:iter_n]
 
+	key = len(data[0])
+
+	# get best performance
+	valid_data = [d[1] for d in data]
+	best_line_idx = np.argmin(np.mean(valid_data, axis=1))
+	print 'BEST PERFORMANCE:', valid_data[best_line_idx]
+
 	fig = plt.figure()
 	ax = plt.subplot(111)
 	labels = {2:(['train-80', 'train-160', 'train-320', 'train-400'],
@@ -43,7 +50,6 @@ def __plot_training_curve(args):
 	colors = ['b','r','g','k']
 	linestyles = ['-','--','-']
 
-	key = len(data[0])
 	for i in range(key): # for train, valid
 		for j in range(len(data[0][i])): # for each time frames
 			line = [data[k][i][j] for k in range(len(data))]
@@ -60,7 +66,6 @@ def __plot_training_curve(args):
 	# fig.savefig(directory+'/'+name+'.png')
 	# plt.close(fig)
 	plt.show()
-
 
 
 if __name__ == '__main__':

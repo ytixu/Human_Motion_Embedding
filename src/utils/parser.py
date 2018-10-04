@@ -131,7 +131,7 @@ def __get_model_path_name(args, file_type):
 
 def get_parse(mode):
 	ap = argparse.ArgumentParser()
-	method_list = ['test', 'Seq2Seq']
+	method_list = ['test', 'Seq2Seq', 'VL-RNN']
 	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=method_list)
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
@@ -157,9 +157,14 @@ def get_parse(mode):
 	ap.add_argument('-lstm', '--lstm', action='store_true', help='Using LSTM instead of the default GRU')
 
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
+	ap.add_argument('-rep', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
 	# ap.add_argument('-label', '--only_label', required=False, help='Only load data with this label', nargs = '*')
 
+	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
+
 	args = vars(ap.parse_args())
+
+	assert args['timesteps'] == args['timesteps_in'] + args['timesteps_out']
 
 	if args[ 'save_path'] is None:
 		args['save_path'] = __get_model_path_name(args, 'save')
