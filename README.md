@@ -30,7 +30,12 @@ python data_preprocessing.py
 ```
 Default conversion to euler angle. See input options for other parameterizations and for visualization of the motions.
 
-3. Test `parser.py`
+3. Run
 ```bash
-python parser.py -m test -id ../../data/h3.6m/euler
+python train.py -m VL_RNN
+```
+
+4. Plot results
+```bash
+python viz_training_curves.py -p ../../out/vl_rnn/<OUTPUT LOG FILE NAME>
 ```

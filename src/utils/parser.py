@@ -15,8 +15,7 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.6
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'VL_RNN', 'H_RNN']
-
+METHOD_LIST = ['test', 'Seq2Seq', 'VL_RNN', 'H_RNN', 'HH_RNN']
 
 # Get data and information on the data
 
@@ -139,6 +138,7 @@ def get_parse(mode):
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
 	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
 	ap.add_argument('-ts', '--test_size', required=False, help='Size of the test bath', default=100, type=int)
+	ap.add_argument('-es', '--embedding_size', required=False, help='Size of the embedding for testing', default=1000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
 	ap.add_argument('-w', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
 
@@ -151,7 +151,7 @@ def get_parse(mode):
 	ap.add_argument('-to', '--timesteps_out', required=False, help='Output timesteps', default=10, type=int)
 	ap.add_argument('-ut', '--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
 	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
-	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
+	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=200, type=int)
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')

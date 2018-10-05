@@ -55,10 +55,6 @@ class VL_RNN:
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-		self.model.summary()
-		self.encoder.summary()
-		self.decoder.summary()
-
 	def load(self, load_path):
 		self.model.load_weights(load_path)
 

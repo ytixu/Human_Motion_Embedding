@@ -7,7 +7,6 @@ from utils import parser, utils
 # from models.VL_RNN import VL_RNN
 
 CV_SPLIT = 0.2
-RAND_EVAL = 1000
 LOSS = 1000
 
 SAVE_TO_DISK = True
@@ -40,6 +39,11 @@ def __eval_pred(model, x, y, args, stats):
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return std, utils.euler_error(y, y_pred, stats)
 
+def __print_model(model):
+	model.model.summary()
+	model.encoder.summary()
+	model.decoder.summary()
+
 def train(model, data_iter, test_iter, valid_data, args):
 	'''
 	Training routine
@@ -69,7 +73,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		new_loss = __eval_loss(model, history, args)
 
 		# populate embedding with random training data
-		rand_idx = np.random.choice(norm_x.shape[0], RAND_EVAL, replace=False)
+		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
 		model.load_embedding(norm_x[rand_idx])
 
 		# process test data
@@ -100,11 +104,14 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train')
-	SAVE_TO_DISK = not args['debug']
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
 
 	model = method_class(args)
+	if args['debug']:
+		__print_model(model)
+
+	SAVE_TO_DISK = not args['debug']
 	train(model, data_iter, test_iter, valid_data, args)
