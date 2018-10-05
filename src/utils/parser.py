@@ -52,7 +52,7 @@ def __data_generator(data_dir, stats, args):
 			name = __get_action_from_file(f)
 			x[:,:,-l+args['action_list'][name]] = 1
 
-		yield x
+		yield x[:100]
 
 def __data_generator_random(data_dir, stats, args, b):
 	'''
@@ -169,6 +169,7 @@ def get_parse(mode):
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
 	assert args['timesteps']  > 0
+	args['optimizer'] = 'optimizers.'+args['optimizer']
 
 	if not args['debug']:
 		if args[ 'save_path'] is None:
@@ -196,7 +197,6 @@ def get_parse(mode):
 
 	if mode == 'train':
 		# TODO: need to add output_data
-		args['optimizer'] = 'optimizers.'+args['optimizer']
 		return (args,
 			__data_generator_random(args['input_data']+'/train/',
 				args['input_data_stats'], args, args['generator_size']),
@@ -207,12 +207,12 @@ def get_parse(mode):
 
 	assert(args['load_path'] is not None)
 	return (args,
-		__data_generator(args['input_data']+'/train/',
-			args['input_data_stats'], args),
+		__data_generator_random(args['input_data']+'/train/',
+			args['input_data_stats'], args, args['generator_size']),
 		__data_generator(args['input_data']+'/test/',
 			args['input_data_stats'], args),
 		__load_validation_data(args['input_data'],
-				args['input_data_stats'], args)
+				args['input_data_stats'], args))
 
 
 if __name__ == '__main__':
