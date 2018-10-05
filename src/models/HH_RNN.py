@@ -8,7 +8,7 @@ from embedding import pattern_matching
 
 RNN_UNIT = None
 
-class H_RNN:
+class HH_RNN:
 	def __init__(self, args):
 		global RNN_UNIT
 
@@ -19,15 +19,16 @@ class H_RNN:
 
 		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in']
-		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.timesteps)
+		self.unit_t = args['unit_timesteps']
+		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.unit_t-1, self.timesteps, self.unit_t)
+		print self.hierarchies
 		# indices relevant to prediction task must appear in hierarchies
 		assert(self.timesteps_in-1 in self.hierarchies)
 		assert(self.timesteps-1 in self.hierarchies)
-		self.unit_t = args['unit_timesteps']
 		# hierarchies must be multiple of unit_t
 		assert(not any([(h+1)%self.unit_t for h in self.hierarchies]))
 		self.unit_n = self.timesteps/self.unit_t
-		self.sup_hierarchies = [(h+1)/self.unit_t for h in self.hierarchies]
+		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
