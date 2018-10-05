@@ -1,6 +1,10 @@
 data/
+*.pyc
 */*.pyc
 */*/*.pyc
+*/*/*/*.pyc
+*.swp
 */*.swp
 */*/*.swp
+*/*/*/*/.swp
 out/
