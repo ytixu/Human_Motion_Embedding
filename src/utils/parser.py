@@ -15,7 +15,7 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.6
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'VL_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'VL_RNN', 'H_RNN']
 
 
 # Get data and information on the data
@@ -55,18 +55,18 @@ def __data_generator(data_dir, stats, args):
 
 		yield x
 
-def __data_generator_random(data_dir, stats, args):
+def __data_generator_random(data_dir, stats, args, b):
 	'''
 	Data generator for training.
 	Return only the used_dims + one hot label (if applicable)
 	Similar to
 	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/seq2seq_model.py#L435
 	'''
-	t,b = args['timesteps'], args['generator_size']
+	t = args['timesteps']
 	data = {}
 	sample_n = 0
 
-	for i, f in enumerate(glob.glob(data_dir+'/train/*.npy')):
+	for i, f in enumerate(glob.glob(data_dir+'/*.npy')):
 		data[i] = (np.load(f)[:,stats['dim_to_use']], __get_action_from_file(f))
 		sample_n += 1
 
@@ -137,7 +137,8 @@ def get_parse(mode):
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
-	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator.', default=10000, type=int)
+	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
+	ap.add_argument('-gs', '--test_size', required=False, help='Size of the test bath', default=1000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
 	ap.add_argument('-w', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
 
@@ -193,18 +194,24 @@ def get_parse(mode):
 	if mode == 'train':
 		# TODO: need to add output_data
 		args['optimizer'] = 'optimizers.'+args['optimizer']
-		return args,__data_generator_random(args['input_data'], args['input_data_stats'], args),__load_validation_data(args['input_data'], args['input_data_stats'], args)
+		return args,
+			__data_generator_random(args['input_data']+'/train/', args['input_data_stats'], args, args['generator_size']),
+			__data_generator_random(args['input_data']+'/test/', args['input_data_stats'], args, args['test_size']),
+			__load_validation_data(args['input_data'], args['input_data_stats'], args)
 
-	assert('load_path' in args)
+	assert(args['load_path'] is not None)
 	return args, __data_generator(args['input_data'], args['input_data_stats'], args), None
 
 
 if __name__ == '__main__':
 	for mode in ['train', 'test']:
-		args, data_iter, _ = get_parse(mode)
+		args, data_iter, test_iter, _ = get_parse(mode)
 		print args
 		for x in data_iter:
 			print 'sample shape', x.shape
+			break
+		for x in test_iter:
+			print 'test shape', x.shape
 			break
 
 

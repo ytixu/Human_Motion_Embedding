@@ -3,8 +3,8 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-from models.seq2seq import Seq2Seq
-from models.VL_RNN import VL_RNN
+# from models.Seq2Seq import Seq2Seq
+# from models.VL_RNN import VL_RNN
 
 CV_SPLIT = 0.2
 RAND_EVAL = 1000
@@ -40,7 +40,7 @@ def __eval_pred(model, x, y, args, stats):
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return std, utils.euler_error(y, y_pred, stats)
 
-def train(model, data_iter, valid_data, args):
+def train(model, data_iter, test_iter, valid_data, args):
 	'''
 	Training routine
 	Args
@@ -67,11 +67,21 @@ def train(model, data_iter, valid_data, args):
 					validation_data=(x_test, y_test))
 
 		new_loss = __eval_loss(model, history, args)
+
+		# populate embedding with random training data
 		rand_idx = np.random.choice(norm_x.shape[0], RAND_EVAL, replace=False)
 		model.load_embedding(norm_x[rand_idx])
 
+		# process test data
+		x_test = test_iter.next()
+		x_test, y_test = model.format_data(x_test)
+		x_test = utils.normalize(x_test, stats, args['normalization_method'])
+
+		# training error
 		mse = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
-		mse_test = __eval(model, norm_x_valid, y_valid, args, stats)
+		# test error
+		mse_test = __eval(model, x_test, y_test, args, stats)
+		# prediction error with validation data
 		std, mse_valid = __eval_pred(model, norm_x_valid, valid_data, args, stats)
 		mean_std, std_std = 0, 0
 		if len(std) > 0:
@@ -89,8 +99,12 @@ def train(model, data_iter, valid_data, args):
 
 
 if __name__ == '__main__':
-	args, data_iter, valid_data = parser.get_parse('train')
+	args, data_iter, test_iter, valid_data = parser.get_parse('train')
 	SAVE_TO_DISK = not args['debug']
 
-	model = (globals()[args['method_name']])(args)
-	train(model, data_iter, valid_data, args)
+	# import model class
+	module = __import__('models.'+args['method_name'])
+	method_class = getattr(module, args['method_name']))
+
+	model = method_class(args)
+	train(model, data_iter, test_iter, valid_data, args)

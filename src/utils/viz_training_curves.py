@@ -14,10 +14,17 @@ def __to_numb_array(row):
 	return np.array(map(float, a))
 
 def __get_data(row):
-	if len(row) == 3:
-		train = __to_numb_array(row[1])[SHORT_TERM_IDX]
-		valid = __to_numb_array(row[2])[SHORT_TERM_IDX]
-		return train, valid
+	train = np.mean(__to_numb_array(row[1]))
+	test = np.mean(__to_numb_array(row[2]))
+	valid = __to_numb_array(row[3])[SHORT_TERM_IDX]
+	std_mean = float(row[4])
+	std_std = float(row[5])
+	return [train, test], valid, [std_mean, std_std]
+
+def __format_performance(line):
+	return '\nTraining: %f\nTesting: %f\nPrediction (80-160-320-400ms): '%(
+		line[0][0], line[0][1])+' '.join(map(str,
+			line[1]))+'\nMEAN STD: %f\nSTD STD: %f' %(line[2][0], line[2][1])
 
 def __plot_training_curve(args):
 	data = None
@@ -36,25 +43,25 @@ def __plot_training_curve(args):
 	key = len(data[0])
 
 	# get best performance
-	valid_data = [d[1] for d in data]
-	best_line_idx = np.argmin(np.mean(valid_data, axis=1))
-	print 'BEST PERFORMANCE:', valid_data[best_line_idx]
+	best_line_idx = np.argmin([np.mean(d[1]) for d in data])
+	print 'BEST VALIDATION SCORE:', __format_performance(data[best_line_idx])
+	best_line_idx = np.argmin([np.mean(d[0]) for d in data])
+	print 'BEST PERFORMANCE:', __format_performance(data[best_line_idx])
 
 	fig = plt.figure()
 	ax = plt.subplot(111)
-	labels = {2:(['train-80', 'train-160', 'train-320', 'train-400'],
-				['valid-80', 'valid-160', 'valid-320', 'valid-400']),
-			3:(['train'],['valid-80', 'valid-160', 'valid-320', 'valid-400'],
-				['test'])}
-
+	labels = [['train','test'],['valid-80', 'valid-160', 'valid-320', 'valid-400'],
+				['mean-std','std-std']]
+			#{2:(['train-80', 'train-160', 'train-320', 'train-400'],
+			#	['valid-80', 'valid-160', 'valid-320', 'valid-400']),
 	colors = ['b','r','g','k']
-	linestyles = ['-','--','-']
+	linestyles = ['-', '--', ':']
 
-	for i in range(key): # for train, valid
+	for i in range(key): # for train, test, valid, std_mean, std_std
 		for j in range(len(data[0][i])): # for each time frames
 			line = [data[k][i][j] for k in range(len(data))]
 			x = range(len(line))
-			ax.plot(x, line, label=labels[key][i][j],
+			ax.plot(x, line, label=labels[i][j],
 				c=colors[j], linestyle=linestyles[i])
 
 	# Shrink current axis's height by 10% on the bottom
@@ -63,15 +70,21 @@ def __plot_training_curve(args):
 	# Put a legend below current axis
 	ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4)
 	plt.suptitle(name)
-	# fig.savefig(directory+'/'+name+'.png')
-	# plt.close(fig)
-	plt.show()
+
+	if args['save']:
+		filename = directory+'/'+name+'.png'
+		print 'Saving file to',filename
+		fig.savefig(filename)
+		plt.close(fig)
+	else:
+		plt.show()
 
 
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
 	ap.add_argument('-p', '--path', required=True, help='Path to the .csv file')
 	ap.add_argument('-i', '--iterations', required=False, help='Plot only this many iterations', default=-1, type=int)
+	ap.add_argument('-s', '--save', required=False, help='Save plot to the same directory as the input file', action='store_true')
 	args = vars(ap.parse_args())
 
 	__plot_training_curve(args)
