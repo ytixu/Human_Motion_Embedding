@@ -13,6 +13,7 @@ class Seq2Seq:
 		self.model = None
 		self.encoder = None
 		self.decoder = None
+		self.embedding = None
 
 		self.timesteps_out = args['timesteps_out']
 		self.timesteps_in = args['timesteps_in']
@@ -51,7 +52,7 @@ class Seq2Seq:
 	def load(self, load_path):
 		self.model.load_weights(load_path)
 
-	def load_embedding(self, data):
+	def load_embedding(self, data, pred_only=False, new=False):
 		# no embedding
 		pass
 

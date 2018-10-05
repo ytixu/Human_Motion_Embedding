@@ -8,7 +8,7 @@ from embedding import pattern_matching
 
 RNN_UNIT = None
 
-class HH_RNN:
+class H_Seq2Seq:
 	def __init__(self, args):
 		global RNN_UNIT
 
@@ -17,16 +17,15 @@ class HH_RNN:
 		self.decoder = None
 		self.embedding = None
 
-		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in']
+		self.timesteps_out = args['timesteps_out']
 		self.unit_t = args['unit_timesteps']
 		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.unit_t-1, self.timesteps, self.unit_t)
 		# indices relevant to prediction task must appear in hierarchies
-		assert self.timesteps_in-1 in self.hierarchies
-		assert self.timesteps-1 == self.hierarchies[-1]
+		assert self.timesteps_in-1 == self.hierarchies[-1]
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
-		self.unit_n = self.timesteps/self.unit_t
+		self.unit_n = self.timesteps_in/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
 		self.latent_dim = args['latent_dim']
@@ -44,11 +43,12 @@ class HH_RNN:
 		self.make_model()
 
 	def make_model(self):
-		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
+		# Similar to HH_RNN
+		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
 		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
 		encode_1 = RNN_UNIT(self.latent_dim/2)
-		encode_2 = RNN_UNIT(self.latent_dim, return_sequences=True)
+		encode_2 = RNN_UNIT(self.latent_dim)
 
 		def encode_partials(seq):
 			encoded = [None]*self.unit_n
@@ -65,24 +65,12 @@ class HH_RNN:
 		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=decoder_activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
 
-		decode_repete = K_layer.RepeatVector(self.timesteps)
+		decode_repete = K_layer.RepeatVector(self.timesteps_out)
 		decode_residual_1 = RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
 		decode_residual_2 = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
-		def decode_angle(e):
-			angle = decode_euler_2(decode_euler_1(e))
-			residual = decode_repete(e)
-			residual = decode_residual_2(decode_residual_1(residual))
-			angle = K_layer.Activation(decoder_activation)(K_layer.add([decode_repete(angle), residual]))
-			return angle
-
-		angles = [None]*len(self.sup_hierarchies)
-		for i,k in enumerate(self.sup_hierarchies):
-			e = K_layer.Lambda(lambda x: x[:,k], output_shape=(self.latent_dim,))(encoded)
-			angles[i] = decode_angle(e)
-
-		decoded =  K_layer.concatenate(angles, axis=1)
-		decoded_ = decode_angle(z)
+		decoded =  decode_residual_2(decode_residual_1(decode_repete(e)))
+		decoded_ = decode_residual_2(decode_residual_1(decode_repete(z)))
 
 		self.encoder = Model(inputs, encoded)
 		self.decoder = Model(z, decoded_)
@@ -98,46 +86,30 @@ class HH_RNN:
 
 	def load_embedding(self, data, pred_only=False, new=False):
 		# assume data is alrady formatted
-		if new or self.embedding is None:
-			self.embedding = {}
+		# if self.embedding is None:
+		# 	self.embedding = [[]]*self.timesteps
 
-		sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
+		# sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
 
-		zs = self.encoder.predict(data)
-		for i in sets:
-			z_i = self.__get_sup_index(i)
-			if i not in embedding:
-				self.embedding[i] = zs[:,z_i]
-			else:
-				self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
+		# zs = self.encoder.predict(data)
+		# for i in sets:
+		# 	z_i = self.__get_sup_index(i)
+		# 	if len(self.embedding[i]) == 0:
+		# 		self.embedding[i] = zs[:,z_i]
+		# 	else:
+		# 		self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
+		pass
 
 	def format_data(self, x):
-		'''
-		Reformat the output data for computing the autoencoding error
-		'''
-		y = np.repeat(x, len(self.hierarchies), axis=0)
-		y = np.reshape(y, (-1, len(self.hierarchies), self.timesteps, y.shape[-1]))
-		for i, h in enumerate(self.hierarchies):
-			for j in range(h+1, self.timesteps):
-				y[:,i,j] = y[:,i,h]
-		y = np.reshape(y, (-1, self.timesteps*len(self.hierarchies), y.shape[-1]))
-		return x, y
+		# Same as Seq2Seq
+		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 
 	def autoencode(self, x):
 		return self.model.predict(x)
 
 	def predict(self, x, return_std=False):
-		# assume data is alrady formatted
-		# and embedding is loaded
-		assert self.embedding != None
-
-		c = self.timesteps_in-1
-		z_ref = self.encoder.predict(x)[:,self.__get_sup_index(c)]
-		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[-1], z_ref, return_std=return_std)
-
+		# Same as Seq2Seq
+		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
 		if return_std:
-			std, z_pred = z_pred
-			return std, self.decoder.predict(z_pred)
-
-		return self.decoder.predict(z_pred)
+			return [], x_pred
+		return x_pred

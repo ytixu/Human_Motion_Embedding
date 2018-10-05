@@ -37,7 +37,7 @@ def __data_generator(data_dir, stats, args):
 	Return only the used_dims + one hot label (if applicable)
 	'''
 	t = args['timesteps']
-	for f in glob.glob(data_dir+'/test/*.npy'):
+	for f in glob.glob(data_dir+'*.npy'):
 		data = np.load(f)[:,stats['dim_to_use']]
 		n,d = data.shape
 		n = n-t+1
@@ -65,7 +65,7 @@ def __data_generator_random(data_dir, stats, args, b):
 	data = {}
 	sample_n = 0
 
-	for i, f in enumerate(glob.glob(data_dir+'/*.npy')):
+	for i, f in enumerate(glob.glob(data_dir+'*.npy')):
 		data[i] = (np.load(f)[:,stats['dim_to_use']], __get_action_from_file(f))
 		sample_n += 1
 
@@ -147,11 +147,11 @@ def get_parse(mode):
 	ap.add_argument('-log', '--log_path', required=False, help='Log file for loss history')
 
 	ap.add_argument('-t', '--timesteps', required=False, help='Total timestep size', default=40, type=int)
-	ap.add_argument('-ti', '--timesteps_in', required=False, help='Input timesteps', default=30, type=int)
-	ap.add_argument('-to', '--timesteps_out', required=False, help='Output timesteps', default=10, type=int)
+	# ap.add_argument('-ti', '--timesteps_in', required=False, help='Input timesteps', default=30, type=int)
+	ap.add_argument('-to', '--timesteps_out', required=False, help='Number of output frames (so input size = total timsteps - ouput size)', default=10, type=int)
 	ap.add_argument('-ut', '--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
 	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
-	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=200, type=int)
+	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
@@ -167,12 +167,14 @@ def get_parse(mode):
 
 	args = vars(ap.parse_args())
 
-	assert args['timesteps'] == args['timesteps_in'] + args['timesteps_out']
+	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
+	assert args['timesteps']  > 0
 
-	if args[ 'save_path'] is None:
-		args['save_path'] = __get_model_path_name(args, 'save')
-	if args['log_path'] is None:
-		args['log_path'] = __get_model_path_name(args, 'log')
+	if not args['debug']:
+		if args[ 'save_path'] is None:
+			args['save_path'] = __get_model_path_name(args, 'save')
+		if args['log_path'] is None:
+			args['log_path'] = __get_model_path_name(args, 'log')
 
 	data_types = ['input_data']
 	if 'output_data' in args and args['output_data'] is not None:
@@ -195,21 +197,35 @@ def get_parse(mode):
 	if mode == 'train':
 		# TODO: need to add output_data
 		args['optimizer'] = 'optimizers.'+args['optimizer']
-		return args,__data_generator_random(args['input_data']+'/train/', args['input_data_stats'], args, args['generator_size']),__data_generator_random(args['input_data']+'/test/', args['input_data_stats'], args, args['test_size']),__load_validation_data(args['input_data'], args['input_data_stats'], args)
+		return (args,
+			__data_generator_random(args['input_data']+'/train/',
+				args['input_data_stats'], args, args['generator_size']),
+			__data_generator_random(args['input_data']+'/test/',
+				args['input_data_stats'], args, args['test_size']),
+			__load_validation_data(args['input_data'],
+				args['input_data_stats'], args))
 
 	assert(args['load_path'] is not None)
-	return args, __data_generator(args['input_data'], args['input_data_stats'], args), None
+	return (args,
+		__data_generator(args['input_data']+'/train/',
+			args['input_data_stats'], args),
+		__data_generator(args['input_data']+'/test/',
+			args['input_data_stats'], args),
+		__load_validation_data(args['input_data'],
+				args['input_data_stats'], args)
 
 
 if __name__ == '__main__':
+	# unit test
 	for mode in ['train', 'test']:
-		args, data_iter, test_iter, _ = get_parse(mode)
+		args, train_iter, test_iter, valid_iter = get_parse(mode)
 		print args
-		for x in data_iter:
-			print 'sample shape', x.shape
+		for x in train_iter:
+			print 'train shape', x.shape
 			break
 		for x in test_iter:
 			print 'test shape', x.shape
 			break
-
-
+		for x in valid_iter:
+			print 'valid shape', x.shape
+			break

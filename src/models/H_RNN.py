@@ -64,16 +64,16 @@ class H_RNN:
 	def load(self, load_path):
 		self.model.load_weights(load_path)
 
-	def load_embedding(self, data, pred_only=False):
+	def load_embedding(self, data, pred_only=False, new=True):
 		# assume data is alrady formatted
-		if self.embedding is None:
-			self.embedding = [[]]*self.timesteps
+		if new or self.embedding is None:
+			self.embedding = {}
 
 		sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
 
 		zs = self.encoder.predict(data)
 		for i in sets:
-			if len(self.embedding[i]) == 0:
+			if i not in self.embedding:
 				self.embedding[i] = zs[:,i]
 			else:
 				self.embedding[i] = np.concatenate([self.embedding[i], zs[:,i]])

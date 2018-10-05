@@ -58,19 +58,19 @@ class VL_RNN:
 	def load(self, load_path):
 		self.model.load_weights(load_path)
 
-	def load_embedding(self, data, pred_only=False):
+	def load_embedding(self, data, pred_only=False, new=False):
 		# assume data is alrady formatted
 		n,t,d = data.shape
 		data = np.reshape(data, (t,n/t,t,d))
 
-		if self.embedding is None:
-			self.embedding = [[]]*self.timesteps
+		if new or self.embedding is None:
+			self.embedding = {}
 
 		sets = [self.timesteps_in-1, t-1] if pred_only else range(t)
 
 		for i in sets:
 			zs = self.encoder.predict(data[i])
-			if len(self.embedding[i]) == 0:
+			if i not in self.embedding:
 				self.embedding[i] = zs
 			else:
 				self.embedding[i] = np.concatenate([self.embedding[i], zs])

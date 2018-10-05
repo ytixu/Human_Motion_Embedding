@@ -3,8 +3,6 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-# from models.Seq2Seq import Seq2Seq
-# from models.VL_RNN import VL_RNN
 
 CV_SPLIT = 0.2
 LOSS = 1000
@@ -74,7 +72,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 		# populate embedding with random training data
 		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
-		model.load_embedding(norm_x[rand_idx])
+		model.load_embedding(norm_x[rand_idx], pred_only=True, new=True)
 
 		# process test data
 		x_test = test_iter.next()
