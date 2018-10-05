@@ -1,3 +1,5 @@
+import numpy as np
+
 import keras.layers as K_layer
 from keras.models import Model
 from keras import optimizers
@@ -63,5 +65,8 @@ class Seq2Seq:
 	def autoencode(self, x):
 		return self.model.predict(x)
 
-	def predict(self, x):
-		return np.concatenate([x,self.model.predict(x)], axis=1)
+	def predict(self, x, return_std=False):
+		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
+		if return_std:
+			return [], x_pred
+		return x_pred

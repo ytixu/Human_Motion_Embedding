@@ -4,6 +4,7 @@ from sklearn import cross_validation
 
 from utils import parser, utils
 from models.seq2seq import Seq2Seq
+from models.VL_RNN import VL_RNN
 
 CV_SPLIT = 0.2
 RAND_EVAL = 1000
@@ -35,9 +36,9 @@ def __eval(model, x, y, args, stats):
 	return utils.euler_error(y, y_pred, stats)
 
 def __eval_pred(model, x, y, args, stats):
-	y_pred = model.predict(x)
+	std, y_pred = model.predict(x, return_std=True)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return utils.euler_error(y, y_pred, stats)
+	return std, utils.euler_error(y, y_pred, stats)
 
 def train(model, data_iter, valid_data, args):
 	'''
@@ -71,16 +72,20 @@ def train(model, data_iter, valid_data, args):
 
 		mse = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
 		mse_test = __eval(model, norm_x_valid, y_valid, args, stats)
-		mse_valid = __eval_pred(model, norm_x_valid, valid_data, args, stats)
+		std, mse_valid = __eval_pred(model, norm_x_valid, valid_data, args, stats)
+		mean_std, std_std = 0, 0
+		if len(std) > 0:
+			mean_std, std_std = np.mean(std), np.std(std)
+			print 'MEAN STD, STD STD', mean_std, std_std
 
 		print 'MEAN TRAIN', np.mean(mse)
 		print 'MEAN VALID', np.mean(mse_test)
-		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(mse_valid)
+		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(model, mse_valid)
 
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
 			 	spamwriter = csv.writer(f)
-			 	spamwriter.writerow([new_loss, mse, mse_test, mse_valid])
+			 	spamwriter.writerow([new_loss, mse, mse_test, mse_valid, mean_std, std_std])
 
 
 if __name__ == '__main__':

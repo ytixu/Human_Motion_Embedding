@@ -1,8 +1,10 @@
+import numpy as np
+
 import keras.layers as K_layer
 from keras.models import Model
 from keras import optimizers
 
-from emedding import pattern_matching
+from embedding import pattern_matching
 
 RNN_UNIT = None
 
@@ -16,6 +18,7 @@ class VL_RNN:
 		self.embedding = None
 
 		self.timesteps = args['timesteps']
+		self.timesteps_in = args['timesteps_in']
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
@@ -61,19 +64,20 @@ class VL_RNN:
 
 	def load_embedding(self, data, pred_only=False):
 		# assume data is alrady formatted
-		n,t,d = data.shape()
+		n,t,d = data.shape
 		data = np.reshape(data, (t,n/t,t,d))
 
 		if self.embedding is None:
-			self.embedding = {}
+			self.embedding = [[]]*self.timesteps
+
 		sets = [self.timesteps_in-1, t-1] if pred_only else range(t)
 
 		for i in sets:
 			zs = self.encoder.predict(data[i])
-			if i in self.embedding:
-				self.embedding[i] = np.concatenate([self.embedding[i], zs])
-			else:
+			if len(self.embedding[i]) == 0:
 				self.embedding[i] = zs
+			else:
+				self.embedding[i] = np.concatenate([self.embedding[i], zs])
 
 
 	def format_data(self, x):
@@ -85,7 +89,7 @@ class VL_RNN:
 
 		for i in range(self.timesteps):
 			# the first i frames
-			new_x[i*n:(i+1)*n] = x[:,:i+1]
+			new_x[i*n:(i+1)*n,:i+1] = x[:,:i+1]
 			# the rest of the frames
 			if self.repeat_last and i+1 != self.timesteps:
 				for j in range(i*n,(i+1)*n):
@@ -95,14 +99,21 @@ class VL_RNN:
 	def autoencode(self, x):
 		return self.model.predict(x)
 
-	def predict(self, x, method=pattern_matching.ADD):
+	def predict(self, x, method=pattern_matching.ADD, return_std=False):
 		# assume data is alrady formatted
 		# and embedding is loaded
-		n,t,d = x.shape()
+		assert self.embedding != None
+
+		n,t,d = x.shape
 		x = np.reshape(x, (t,n/t,t,d))
 
 		c = self.timesteps_in-1
 		z_ref = self.encoder.predict(x[c])
 		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[-1], z_ref)
+		z_pred = pattern_matching.add(self.embedding[c], self.embedding[-1], z_ref, return_std=return_std)
+
+		if return_std:
+			std, z_pred = z_pred
+			return std, self.decoder.predict(z_pred)
+
 		return self.decoder.predict(z_pred)

@@ -1,4 +1,4 @@
-import numpy as numpy
+import numpy as np
 from scipy.spatial import distance
 
 # pattern matching methods
@@ -66,7 +66,11 @@ def closest_partial_index(modality_partial, z_ref, weights={}):
 		weights = __get_dist(modality_partial, z_ref)
 	return np.argmin(weights)
 
-def add(modality_partial, modality_complete, z_ref):
+def add(modality_partial, modality_complete, z_ref, return_std):
 	# assume
-	add_mean = np.mean(modality_partial - modality_complete, axis=0)
-	return z_ref + add_mean
+	diff = modality_partial - modality_complete
+	add_mean = np.mean(diff, axis=0)
+	z_new = z_ref + add_mean
+	if return_std:
+		return np.std(diff, axis=0), z_new
+	return z_new

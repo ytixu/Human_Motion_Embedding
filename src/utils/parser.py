@@ -15,6 +15,8 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.6
 set_session(tf.Session(config=config))
 
+METHOD_LIST = ['test', 'Seq2Seq', 'VL_RNN']
+
 
 # Get data and information on the data
 
@@ -131,8 +133,7 @@ def __get_model_path_name(args, file_type):
 
 def get_parse(mode):
 	ap = argparse.ArgumentParser()
-	method_list = ['test', 'Seq2Seq', 'VL-RNN']
-	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=method_list)
+	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
