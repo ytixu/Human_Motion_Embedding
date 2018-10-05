@@ -4,19 +4,22 @@ import keras.layers as K_layer
 from keras.models import Model
 from keras import optimizers
 
+from embedding import pattern_matching
+
 RNN_UNIT = None
 
-class Seq2Seq:
+class H_RNN:
 	def __init__(self, args):
 		global RNN_UNIT
 
 		self.model = None
 		self.encoder = None
 		self.decoder = None
+		self.embedding = None
 
-		self.timesteps_out = args['timesteps_out']
+		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in']
-		self.hierarchies = args['hierarchies']
+		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.timesteps)
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
@@ -32,12 +35,12 @@ class Seq2Seq:
 		self.make_model()
 
 	def make_model(self):
-		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
+		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		encoded = RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decoder_activation = 'tanh'
-		decode_repete = K_layer.RepeatVector(self.timesteps_out)
+		decode_repete = K_layer.RepeatVector(self.timesteps)
 		decode_rnn = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
 		partials = [None]*len(self.hierarchies)
@@ -68,7 +71,7 @@ class Seq2Seq:
 
 		sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
 
-		zs = self.encoder.predict(data[i])
+		zs = self.encoder.predict(data)
 		for i in sets:
 			if len(self.embedding[i]) == 0:
 				self.embedding[i] = zs[:,i]

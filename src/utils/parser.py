@@ -138,7 +138,7 @@ def get_parse(mode):
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
 	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
-	ap.add_argument('-gs', '--test_size', required=False, help='Size of the test bath', default=1000, type=int)
+	ap.add_argument('-ts', '--test_size', required=False, help='Size of the test bath', default=100, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
 	ap.add_argument('-w', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
 
@@ -150,6 +150,7 @@ def get_parse(mode):
 	ap.add_argument('-ti', '--timesteps_in', required=False, help='Input timesteps', default=30, type=int)
 	ap.add_argument('-to', '--timesteps_out', required=False, help='Output timesteps', default=10, type=int)
 	ap.add_argument('-ut', '--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
+	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
 	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
@@ -194,10 +195,7 @@ def get_parse(mode):
 	if mode == 'train':
 		# TODO: need to add output_data
 		args['optimizer'] = 'optimizers.'+args['optimizer']
-		return args,
-			__data_generator_random(args['input_data']+'/train/', args['input_data_stats'], args, args['generator_size']),
-			__data_generator_random(args['input_data']+'/test/', args['input_data_stats'], args, args['test_size']),
-			__load_validation_data(args['input_data'], args['input_data_stats'], args)
+		return args,__data_generator_random(args['input_data']+'/train/', args['input_data_stats'], args, args['generator_size']),__data_generator_random(args['input_data']+'/test/', args['input_data_stats'], args, args['test_size']),__load_validation_data(args['input_data'], args['input_data_stats'], args)
 
 	assert(args['load_path'] is not None)
 	return args, __data_generator(args['input_data'], args['input_data_stats'], args), None

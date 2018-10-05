@@ -89,7 +89,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 			print 'MEAN STD, STD STD', mean_std, std_std
 
 		print 'MEAN TRAIN', np.mean(mse)
-		print 'MEAN VALID', np.mean(mse_test)
+		print 'MEAN TEST', np.mean(mse_test)
 		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(model, mse_valid)
 
 		if SAVE_TO_DISK:
@@ -103,8 +103,8 @@ if __name__ == '__main__':
 	SAVE_TO_DISK = not args['debug']
 
 	# import model class
-	module = __import__('models.'+args['method_name'])
-	method_class = getattr(module, args['method_name']))
+	module = __import__('models.'+ args['method_name'])
+	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
 
 	model = method_class(args)
 	train(model, data_iter, test_iter, valid_data, args)
