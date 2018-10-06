@@ -2,7 +2,6 @@ import numpy as np
 
 import keras.layers as K_layer
 from keras.models import Model
-#from keras import optimizers
 
 import abs_model
 

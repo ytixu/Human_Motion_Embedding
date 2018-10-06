@@ -2,21 +2,12 @@ import numpy as np
 
 import keras.layers as K_layer
 from keras.models import Model
-from keras import optimizers
 
+import abs_model
 from embedding import pattern_matching
 
-RNN_UNIT = None
-
-class H_RNN:
+class H_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
-		global RNN_UNIT
-
-		self.model = None
-		self.encoder = None
-		self.decoder = None
-		self.embedding = None
-
 		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in']
 		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.timesteps)
@@ -28,24 +19,16 @@ class H_RNN:
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
 
-		self.loss_func = args['loss_func']
-		self.opt = eval(args['optimizer'])
-
-		if args['lstm']:
-			from keras.layers import LSTM as RNN_UNIT
-		else:
-			from keras.layers import GRU as RNN_UNIT
-
-		self.make_model()
+		return super(H_RNN, self).__init__(args)
 
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
-		encoded = RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
+		encoded = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decoder_activation = 'tanh'
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_rnn = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
 		partials = [None]*len(self.hierarchies)
 		for i,h in enumerate(self.hierarchies):
@@ -60,9 +43,6 @@ class H_RNN:
 		self.model = Model(inputs, decoded)
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
-
-	def load(self, load_path):
-		self.model.load_weights(load_path)
 
 	def load_embedding(self, data, pred_only=False, new=True):
 		# assume data is alrady formatted
@@ -89,9 +69,6 @@ class H_RNN:
 				y[:,i,j] = y[:,i,h]
 		y = np.reshape(y, (-1, self.timesteps*len(self.hierarchies), y.shape[-1]))
 		return x, y
-
-	def autoencode(self, x):
-		return self.model.predict(x)
 
 	def predict(self, x, return_std=False):
 		# assume data is alrady formatted

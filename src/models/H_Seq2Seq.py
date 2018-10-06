@@ -2,21 +2,12 @@ import numpy as np
 
 import keras.layers as K_layer
 from keras.models import Model
-from keras import optimizers
 
+import abs_model
 from embedding import pattern_matching
 
-RNN_UNIT = None
-
-class H_Seq2Seq:
+class H_Seq2Seq(abs_model.AbstractModel):
 	def __init__(self, args):
-		global RNN_UNIT
-
-		self.model = None
-		self.encoder = None
-		self.decoder = None
-		self.embedding = None
-
 		self.timesteps_in = args['timesteps_in']
 		self.timesteps_out = args['timesteps_out']
 		self.unit_t = args['unit_timesteps']
@@ -32,23 +23,15 @@ class H_Seq2Seq:
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
 
-		self.loss_func = args['loss_func']
-		self.opt = eval(args['optimizer'])
-
-		if args['lstm']:
-			from keras.layers import LSTM as RNN_UNIT
-		else:
-			from keras.layers import GRU as RNN_UNIT
-
-		self.make_model()
+		return super(H_Seq2Seq, self).__init__(args)
 
 	def make_model(self):
 		# Similar to HH_RNN
 		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
 		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		encode_1 = RNN_UNIT(self.latent_dim/2)
-		encode_2 = RNN_UNIT(self.latent_dim)
+		encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
+		encode_2 = abs_model.RNN_UNIT(self.latent_dim)
 
 		def encode_partials(seq):
 			encoded = [None]*self.unit_n
@@ -66,8 +49,8 @@ class H_Seq2Seq:
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_residual_1 = RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
-		decode_residual_2 = RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
 		decoded =  decode_residual_2(decode_residual_1(decode_repete(e)))
 		decoded_ = decode_residual_2(decode_residual_1(decode_repete(z)))
@@ -81,18 +64,12 @@ class H_Seq2Seq:
 	def __get_sup_index(self, i):
 		return (i+1)/self.unit_t-1
 
-	def load(self, load_path):
-		self.model.load_weights(load_path)
-
 	def load_embedding(self, data, pred_only=False, new=False):
 		pass
 
 	def format_data(self, x):
 		# Same as Seq2Seq
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
-
-	def autoencode(self, x):
-		return self.model.predict(x)
 
 	def predict(self, x, return_std=False):
 		# Same as Seq2Seq
