@@ -101,7 +101,7 @@ class H_RNN:
 		c = self.timesteps_in-1
 		z_ref = self.encoder.predict(x)[:,c]
 		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[-1], z_ref, return_std=return_std)
+		z_pred = pattern_matching.add(self.embedding[c], self.embedding[self.timesteps-1], z_ref, return_std=return_std)
 
 		if return_std:
 			std, z_pred = z_pred

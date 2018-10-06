@@ -101,12 +101,12 @@ class HH_RNN:
 		if new or self.embedding is None:
 			self.embedding = {}
 
-		sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
+		sets = [self.timesteps_in-1, self.timesteps-1] if pred_only else self.hierarchies
 
 		zs = self.encoder.predict(data)
 		for i in sets:
 			z_i = self.__get_sup_index(i)
-			if i not in embedding:
+			if i not in self.embedding:
 				self.embedding[i] = zs[:,z_i]
 			else:
 				self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
@@ -134,7 +134,7 @@ class HH_RNN:
 		c = self.timesteps_in-1
 		z_ref = self.encoder.predict(x)[:,self.__get_sup_index(c)]
 		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[-1], z_ref, return_std=return_std)
+		z_pred = pattern_matching.add(self.embedding[c], self.embedding[self.timesteps-1], z_ref, return_std=return_std)
 
 		if return_std:
 			std, z_pred = z_pred
