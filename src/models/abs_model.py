@@ -5,6 +5,8 @@ Abstract class for models
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
+from keras import optimizers
+
 RNN_UNIT = None
 
 class AbstractModel:
@@ -17,6 +19,9 @@ class AbstractModel:
 		self.encoder = None
 		self.decoder = None
 		self.embedding = None
+
+		self.loss_func = args['loss_func']
+		self.opt = eval(args['optimizer'])
 
 		if args['lstm']:
 			from keras.layers import LSTM as RNN_UNIT

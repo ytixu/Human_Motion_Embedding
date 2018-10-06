@@ -2,11 +2,11 @@ import numpy as np
 
 import keras.layers as K_layer
 from keras.models import Model
-from keras import optimizers
+#from keras import optimizers
 
-import __model
+import abs_model
 
-class Seq2Seq:
+class Seq2Seq(abs_model.AbstractModel):
 	def __init__(self, args):
 		self.timesteps_out = args['timesteps_out']
 		self.timesteps_in = args['timesteps_in']
@@ -19,12 +19,12 @@ class Seq2Seq:
 
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
-		encoded = __model.RNN_UNIT(self.latent_dim)(inputs)
+		encoded = abs_model.RNN_UNIT(self.latent_dim)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decoder_activation = 'tanh'
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_rnn = __model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
 		decoded = decode_rnn(decode_repete(encoded))
 		decoded_ = decode_rnn(decode_repete(z))
