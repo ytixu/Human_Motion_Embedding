@@ -20,6 +20,8 @@ class AbstractModel:
 		self.decoder = None
 		self.embedding = None
 
+		self.repeat_last = args['repeat_last']
+
 		self.loss_func = args['loss_func']
 		self.opt = eval(args['optimizer'])
 

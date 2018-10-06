@@ -20,7 +20,7 @@ def __eval_loss(model, history, args):
 		LOSS = new_loss
 		if SAVE_TO_DISK:
 			model.model.save_weights(args['save_path'], overwrite=True)
-		print 'Saved model - ', LOSS
+		print 'New loss - ', LOSS
 	return new_loss
 
 def __eval(model, x, y, args, stats):

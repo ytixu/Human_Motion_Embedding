@@ -11,7 +11,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.timesteps_in = args['timesteps_in']
 		self.timesteps_out = args['timesteps_out']
 		self.unit_t = args['unit_timesteps']
-		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.unit_t-1, self.timesteps, self.unit_t)
+		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.unit_t-1, self.timesteps_in, self.unit_t)
 		# indices relevant to prediction task must appear in hierarchies
 		assert self.timesteps_in-1 == self.hierarchies[-1]
 		# hierarchies must be multiple of unit_t
@@ -38,6 +38,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.input_dim))(seq)
 				encoded[i] = encode_1(rs)
+			# TODO: support concat sequence of 1 item
 			return encode_reshape(K_layer.concatenate(encoded, axis=1))
 
 		encoded = encode_partials(reshaped)
@@ -52,7 +53,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
 
-		decoded =  decode_residual_2(decode_residual_1(decode_repete(e)))
+		decoded =  decode_residual_2(decode_residual_1(decode_repete(encoded)))
 		decoded_ = decode_residual_2(decode_residual_1(decode_repete(z)))
 
 		self.encoder = Model(inputs, encoded)

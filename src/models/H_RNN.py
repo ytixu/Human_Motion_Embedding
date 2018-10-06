@@ -49,7 +49,7 @@ class H_RNN(abs_model.AbstractModel):
 		if new or self.embedding is None:
 			self.embedding = {}
 
-		sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
+		sets = [self.timesteps_in-1, self.timesteps-1] if pred_only else self.hierarchies
 
 		zs = self.encoder.predict(data)
 		for i in sets:
