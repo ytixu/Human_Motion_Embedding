@@ -115,10 +115,31 @@ def __format_file_name(a):
 		a.strip(')').split('(')).split(','))
 
 def __get_model_path_name(args, file_type):
-	ext, sub_dir = 'hdf5', '/models'
+	'''
+	Format name for the log and model file. Name include:
+		directory: 	model name
+					data_type (e.g.: euler)
+					supervised
+		filename: 	rnn unit (lstm or gru)
+					timesteps
+					latent_dim
+					unit_timesteps
+					loss_func
+					optimizer
+					normalization_method
+					repeat_last
+					timestamp
+		extension:  .log or .hdf5
+	'''
+	ext = 'hdf5'
 	if file_type == 'log':
-		ext, sub_dir = 'csv', '/log'
-	output_name = args['method_name'].lower()+sub_dir
+		ext = 'csv'
+
+	output_name = args['method_name'].lower()+'/'+os.path.basename(args['input_data'])
+	if supervised:
+		output_name = output_name+'/sup'
+	else:
+		output_name = output_name+'/unsup'
 	output_name = utils.output_dir(output_name)
 
 	unit = 'gru'

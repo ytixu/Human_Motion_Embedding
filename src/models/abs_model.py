@@ -21,6 +21,7 @@ class AbstractModel:
 		self.embedding = None
 
 		self.repeat_last = args['repeat_last']
+		self.supervised = args['supervised']
 
 		self.loss_func = args['loss_func']
 		self.opt = eval(args['optimizer'])
@@ -30,7 +31,6 @@ class AbstractModel:
 		else:
 			from keras.layers import GRU as RNN_UNIT
 
-		self.supervised = args['supervised']
 		self.make_model()
 
 	def load(self, load_path):

@@ -94,12 +94,16 @@ class HH_RNN(abs_model.AbstractModel):
 	def format_data(self, x):
 		'''
 		Reformat the output data for computing the autoencoding error
+		Same as H_RNN
 		'''
 		y = np.repeat(x, len(self.hierarchies), axis=0)
 		y = np.reshape(y, (-1, len(self.hierarchies), self.timesteps, y.shape[-1]))
 		for i, h in enumerate(self.hierarchies):
 			for j in range(h+1, self.timesteps):
-				y[:,i,j] = y[:,i,h]
+				if self.repeat_last:
+					y[:,i,j] = y[:,i,h]
+				else:
+					y[:,i,j] = 0
 		y = np.reshape(y, (-1, self.timesteps*len(self.hierarchies), y.shape[-1]))
 		return x, y
 

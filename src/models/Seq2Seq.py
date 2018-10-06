@@ -15,7 +15,6 @@ class Seq2Seq(abs_model.AbstractModel):
 
 		return super(Seq2Seq, self).__init__(args)
 
-
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		encoded = abs_model.RNN_UNIT(self.latent_dim)(inputs)
