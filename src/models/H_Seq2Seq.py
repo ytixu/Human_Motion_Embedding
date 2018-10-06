@@ -85,19 +85,6 @@ class H_Seq2Seq:
 		self.model.load_weights(load_path)
 
 	def load_embedding(self, data, pred_only=False, new=False):
-		# assume data is alrady formatted
-		# if self.embedding is None:
-		# 	self.embedding = [[]]*self.timesteps
-
-		# sets = [self.timesteps_in-1, t-1] if pred_only else self.hierarchies
-
-		# zs = self.encoder.predict(data)
-		# for i in sets:
-		# 	z_i = self.__get_sup_index(i)
-		# 	if len(self.embedding[i]) == 0:
-		# 		self.embedding[i] = zs[:,z_i]
-		# 	else:
-		# 		self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
 		pass
 
 	def format_data(self, x):
