@@ -5,6 +5,7 @@ from keras.models import Model
 
 import abs_model
 from embedding import pattern_matching
+from format_data import formatter
 
 class H_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
@@ -63,16 +64,9 @@ class H_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as HH_RNN
 		'''
-		y = np.repeat(x, len(self.hierarchies), axis=0)
-		y = np.reshape(y, (-1, len(self.hierarchies), self.timesteps, y.shape[-1]))
-		for i, h in enumerate(self.hierarchies):
-			for j in range(h+1, self.timesteps):
-				if self.repeat_last:
-					y[:,i,j] = y[:,i,h]
-				else:
-					y[:,i,j] = 0
-		y = np.reshape(y, (-1, self.timesteps*len(self.hierarchies), y.shape[-1]))
-		return x, y
+		if self.supervised:
+			x = formatter.randomize_label(self, x)
+		return formatter.expand_time(x)
 
 	def predict(self, x, return_std=False):
 		# assume data is alrady formatted

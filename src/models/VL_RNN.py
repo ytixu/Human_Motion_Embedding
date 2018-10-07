@@ -5,6 +5,7 @@ from keras.models import Model
 
 import abs_model
 from embedding import pattern_matching
+from format_data import formatter
 
 class VL_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
@@ -57,17 +58,9 @@ class VL_RNN(abs_model.AbstractModel):
 		'''
 		Reformat the data so that we can encode sequences of different lengths.
 		'''
-		n,t,d = x.shape
-		new_x = np.zeros((n*self.timesteps, t, d))
-
-		for i in range(self.timesteps):
-			# the first i frames
-			new_x[i*n:(i+1)*n,:i+1] = x[:,:i+1]
-			# the rest of the frames
-			if self.repeat_last and i+1 != self.timesteps:
-				for j in range(i*n,(i+1)*n):
-					new_x[j,i+1:] = x[j,i]
-		return new_x, new_x
+		if self.supervised:
+			x = formatter.randomize_label(self, x)
+		return formatter.randomize_time(self, x)
 
 	def predict(self, x, method=pattern_matching.ADD, return_std=False):
 		# assume data is alrady formatted

@@ -30,12 +30,12 @@ def __eval(model, x, y, args, stats):
 	'''
 	y_pred = model.autoencode(x)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return utils.euler_error(y, y_pred, stats)
+	return utils.prediction_error(y_pred, y, stats)
 
 def __eval_pred(model, x, y, args, stats):
 	std, y_pred = model.predict(x, return_std=True)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return std, utils.euler_error(y, y_pred, stats)
+	return std, utils.prediction_error(y_pred, y, stats)
 
 def __print_model(model):
 	model.model.summary()

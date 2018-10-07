@@ -118,7 +118,7 @@ def __get_model_path_name(args, file_type):
 	'''
 	Format name for the log and model file. Name include:
 		directory: 	model name
-					data_type (e.g.: euler)
+					parameterization (e.g.: euler)
 					supervised
 		filename: 	rnn unit (lstm or gru)
 					timesteps
@@ -135,7 +135,7 @@ def __get_model_path_name(args, file_type):
 	if file_type == 'log':
 		ext = 'csv'
 
-	output_name = args['method_name'].lower()+'/'+os.path.basename(args['input_data'])
+	output_name = args['method_name'].lower()+'/'+args['input_data']['parameterization']
 	if args['supervised']:
 		output_name = output_name+'/sup'
 	else:
@@ -174,10 +174,10 @@ def get_parse(mode):
 	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
 	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
+	ap.add_argument('-exp', '--expand_time_bound', required=False, help='Expantion of time modality upper bound (only for VL_RNN)', default=10, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
 	ap.add_argument('-opt', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
-	# ap.add_argument('-lr', '--learning_rate', required=False, help='Learning rate', default=0.001, type=float)
 	ap.add_argument('-lstm', '--lstm', action='store_true', help='Using LSTM instead of the default GRU')
 
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
@@ -192,12 +192,10 @@ def get_parse(mode):
 	assert args['timesteps']  > 0
 	args['optimizer'] = 'optimizers.'+args['optimizer']
 
-	if not args['debug']:
-		if args[ 'save_path'] is None:
-			args['save_path'] = __get_model_path_name(args, 'save')
-		if args['log_path'] is None:
-			args['log_path'] = __get_model_path_name(args, 'log')
+	if args['supervised']:
+		args['actions'] = stats['action_list']
 
+	# load some statistics and other information about the data
 	data_types = ['input_data']
 	if 'output_data' in args and args['output_data'] is not None:
 		data_types = ['input_data', 'output_data']
@@ -208,16 +206,22 @@ def get_parse(mode):
 			'dim_to_use': stats['dim_to_use'],
 			'data_mean': np.array(stats['data_mean']),
 			'data_dim': len(stats['dim_to_use']),
-			'orig_data_dim': len(stats['data_mean'])
+			'orig_data_dim': len(stats['data_mean']),
+			'parameterization': os.path.basename(args[t])
 		}
 		for k in ['data_std', 'data_min', 'data_max']:
 			args[t][k] = np.array(stats[k])[stats['dim_to_use']]
 
-	if args['supervised']:
-		args['actions'] = stats['action_list']
+	# make output path
+	if not args['debug']:
+		if args[ 'save_path'] is None:
+			args['save_path'] = __get_model_path_name(args, 'save')
+		if args['log_path'] is None:
+			args['log_path'] = __get_model_path_name(args, 'log')
 
+	# load and output data
 	if mode == 'train':
-		# TODO: need to add output_data
+		# TODO: add output_data
 		return (args,
 			__data_generator_random(args['input_data']+'/train/',
 				args['input_data_stats'], args, args['generator_size']),

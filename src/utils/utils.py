@@ -1,6 +1,8 @@
 import os
 import numpy as np
 
+import converter
+
 # For ouputs
 
 OUTPUT_DIR = '../out/'
@@ -68,9 +70,27 @@ def recover(x, stats):
 SHORT_TERM_IDX = [1,3,7,9]
 LONG_TERM_IDX = [11,13,15,17,19,21,23,24]
 
-def euler_error(x, y, stats):
-	return np.mean(np.sqrt(np.sum(np.square(
-		x[:,:,:stats['data_dim']] - y[:,:,:stats['data_dim']]), -1)), 0)
+def l2_error(y_pred, y_true, stats):
+	return np.mean(np.sqrt(np.sum(np.square(y_pred - y_true), -1)), 0)
+
+def __convert_expmap2euler(x, stats):
+	x = recover(x, stats)
+	x = converter.sequence_expmap2euler(y_true)
+	x[:,:,:6] = 0
+	return x
+
+def prediction_error(y_pred, y_true, stats):
+	if stats['parameterization'] == 'expmap':
+		# similar to
+		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203
+		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim'])
+		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim'])
+		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
+		print idx_to_use #TODO: remove
+		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use], stats)
+	else:
+		# use the same l2 for euclidean
+		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']], stats)
 
 def list_short_term(model, error):
 	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]

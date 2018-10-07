@@ -9,9 +9,7 @@ class Seq2Seq(abs_model.AbstractModel):
 	def __init__(self, args):
 		self.timesteps_out = args['timesteps_out']
 		self.timesteps_in = args['timesteps_in']
-		self.latent_dim = args['latent_dim']
-		self.input_dim = args['input_data_stats']['data_dim']
-		self.output_dim = self.input_dim
+		self.expand_t = args['expand']
 
 		return super(Seq2Seq, self).__init__(args)
 

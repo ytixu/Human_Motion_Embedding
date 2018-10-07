@@ -300,6 +300,7 @@ def __running_average( actions_dict, actions, k, to_type ):
 			# Ignored indices
 			dec_out[i,:,:6] = 0
 			idx_to_use = np.where(np.std(dec_out[i], axis=0) > 1e-4)[0]
+			# should be [6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
 
 			# Compute l2 error
 			x = np.power(dec_out[i][:,idx_to_use] - avg[idx_to_use], 2)

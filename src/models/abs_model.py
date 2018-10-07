@@ -20,8 +20,19 @@ class AbstractModel:
 		self.decoder = None
 		self.embedding = None
 
+		self.latent_dim = args['latent_dim']
+		self.input_dim = args['input_data_stats']['data_dim']
+
 		self.repeat_last = args['repeat_last']
 		self.supervised = args['supervised']
+
+		if self.supervised:
+			self.label_dim = len(args['action'])
+			self.action = args['action']
+			self.input_dim += self.label_dim
+
+		# TODO: different output
+		self.output_dim = self.input_dim
 
 		self.loss_func = args['loss_func']
 		self.opt = eval(args['optimizer'])
