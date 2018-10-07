@@ -106,6 +106,9 @@ def __load_validation_data(data_dir, stats, args):
 		x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
 		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
 
+		if args['supervised']:
+			name = __get_action_from_file(f)
+			x[s:e,:,-l+args['actions'][name]] = 1
 	return x
 
 # Get load and save path

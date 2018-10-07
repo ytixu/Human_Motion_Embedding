@@ -67,7 +67,7 @@ class AbstractModel:
 
 
 	@abstractmethod
-	def format_data(self, x):
+	def format_data(self, x, for_validation=False):
 		'''
 		Format the data to match the input and output of the model.
 		'''

@@ -52,7 +52,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		args: other input arguments
 	'''
 	stats = args['input_data_stats']
-	x_valid, y_valid = model.format_data(valid_data)
+	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
 	norm_x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
 
 	for x in data_iter:

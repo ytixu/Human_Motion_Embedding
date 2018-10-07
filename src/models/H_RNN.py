@@ -59,14 +59,16 @@ class H_RNN(abs_model.AbstractModel):
 			else:
 				self.embedding[i] = np.concatenate([self.embedding[i], zs[:,i]])
 
-	def format_data(self, x):
+	def format_data(self, x, for_validation=False):
 		'''
 		Reformat the output data for computing the autoencoding error
 		Same as HH_RNN
 		'''
+		if for_validation:
+			return x, x
 		if self.supervised:
 			x = formatter.randomize_label(self, x)
-		return formatter.expand_time(x)
+		return formatter.expand_time(self, x)
 
 	def predict(self, x, return_std=False):
 		# assume data is alrady formatted

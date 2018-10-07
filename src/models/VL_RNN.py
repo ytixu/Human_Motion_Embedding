@@ -54,10 +54,12 @@ class VL_RNN(abs_model.AbstractModel):
 				self.embedding[i] = np.concatenate([self.embedding[i], zs])
 
 
-	def format_data(self, x):
+	def format_data(self, x, for_validation=False):
 		'''
 		Reformat the data so that we can encode sequences of different lengths.
 		'''
+		if for_validation:
+			return x, x
 		if self.supervised:
 			x = formatter.randomize_label(self, x)
 		return formatter.randomize_time(self, x)
