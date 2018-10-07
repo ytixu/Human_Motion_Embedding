@@ -136,7 +136,7 @@ def __get_model_path_name(args, file_type):
 		ext = 'csv'
 
 	output_name = args['method_name'].lower()+'/'+os.path.basename(args['input_data'])
-	if supervised:
+	if args['supervised']:
 		output_name = output_name+'/sup'
 	else:
 		output_name = output_name+'/unsup'
