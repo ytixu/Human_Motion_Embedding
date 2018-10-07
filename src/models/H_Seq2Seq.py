@@ -22,7 +22,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
-		self.expand_t = args['expand']
+		self.expand_t = args['expand_time_bound']
 
 		return super(H_Seq2Seq, self).__init__(args)
 

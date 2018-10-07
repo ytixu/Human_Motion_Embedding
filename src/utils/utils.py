@@ -48,14 +48,14 @@ def unorm_max(x, stats):
 def normalize(x, stats, norm_method):
 	if norm_method != 'none':
 		norm_x = np.copy(x)
-		norm_x[:,:,:stats['data_dim']] =  (globals()[norm_method])(x, stats)
+		norm_x[:,:,:stats['data_dim']] =  (globals()[norm_method])(x[:,:,:stats['data_dim']], stats)
 		return norm_x
 	return x
 
 def unormalize(x, stats, norm_method):
 	if norm_method != 'none':
 		unorm_x = np.copy(x)
-		unorm_x[:,:,:stats['data_dim']] = (globals()['u'+norm_method])(x, stats)
+		unorm_x[:,:,:stats['data_dim']] = (globals()['u'+norm_method])(x[:,:,:stats['data_dim']], stats)
 		return unorm_x
 	return x
 
@@ -83,8 +83,8 @@ def prediction_error(y_pred, y_true, stats):
 	if stats['parameterization'] == 'expmap':
 		# similar to
 		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203
-		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim'])
-		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim'])
+		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']])
+		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']])
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
 		print idx_to_use #TODO: remove
 		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use], stats)

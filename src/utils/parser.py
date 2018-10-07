@@ -28,7 +28,7 @@ def __get_action_from_file(f):
 def __label_dim(args):
 	l = 0
 	if args['supervised']:
-		l = len(args['action_list'])
+		l = len(args['actions'])
 	return l
 
 def __data_generator(data_dir, stats, args):
@@ -50,7 +50,7 @@ def __data_generator(data_dir, stats, args):
 
 		if args['supervised']:
 			name = __get_action_from_file(f)
-			x[:,:,-l+args['action_list'][name]] = 1
+			x[:,:,-l+args['actions'][name]] = 1
 
 		yield x[:100]
 
@@ -87,7 +87,7 @@ def __data_generator_random(data_dir, stats, args, b):
 
 			if args['supervised']:
 				name = __get_action_from_file(f)
-				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['action_list'][name]] = 1
+				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][name]] = 1
 
 		yield x
 
@@ -135,7 +135,7 @@ def __get_model_path_name(args, file_type):
 	if file_type == 'log':
 		ext = 'csv'
 
-	output_name = args['method_name'].lower()+'/'+args['input_data']['parameterization']
+	output_name = args['method_name'].lower()+'/'+args['input_data_stats']['parameterization']
 	if args['supervised']:
 		output_name = output_name+'/sup'
 	else:
@@ -192,17 +192,14 @@ def get_parse(mode):
 	assert args['timesteps']  > 0
 	args['optimizer'] = 'optimizers.'+args['optimizer']
 
-	if args['supervised']:
-		args['actions'] = stats['action_list']
-
 	# load some statistics and other information about the data
 	data_types = ['input_data']
 	if 'output_data' in args and args['output_data'] is not None:
 		data_types = ['input_data', 'output_data']
 	for t in data_types:
 		stats = __get_stats(args[t])
-		t = t+'_stats'
-		args[t] = {
+		ts = t+'_stats'
+		args[ts] = {
 			'dim_to_use': stats['dim_to_use'],
 			'data_mean': np.array(stats['data_mean']),
 			'data_dim': len(stats['dim_to_use']),
@@ -210,7 +207,10 @@ def get_parse(mode):
 			'parameterization': os.path.basename(args[t])
 		}
 		for k in ['data_std', 'data_min', 'data_max']:
-			args[t][k] = np.array(stats[k])[stats['dim_to_use']]
+			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
+
+		if args['supervised']:
+			args['actions'] = stats['action_list']
 
 	# make output path
 	if not args['debug']:

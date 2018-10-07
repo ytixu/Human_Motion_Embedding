@@ -9,7 +9,7 @@ class Seq2Seq(abs_model.AbstractModel):
 	def __init__(self, args):
 		self.timesteps_out = args['timesteps_out']
 		self.timesteps_in = args['timesteps_in']
-		self.expand_t = args['expand']
+		self.expand_t = args['expand_time_bound']
 
 		return super(Seq2Seq, self).__init__(args)
 

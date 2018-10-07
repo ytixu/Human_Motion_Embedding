@@ -27,8 +27,8 @@ class AbstractModel:
 		self.supervised = args['supervised']
 
 		if self.supervised:
-			self.label_dim = len(args['action'])
-			self.action = args['action']
+			self.label_dim = len(args['actions'])
+			self.actions = args['actions']
 			self.input_dim += self.label_dim
 
 		# TODO: different output
