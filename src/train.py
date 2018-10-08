@@ -26,11 +26,10 @@ def __eval_loss(model, history, args):
 def __eval(model, x, y, args, stats):
 	'''
 	Compare results using l2 distance of the Euler angle.
-	TODO: need to adapt to expmap.
 	'''
 	y_pred = model.autoencode(x)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return utils.prediction_error(y_pred, y, stats)
+	return utils.l2_error(y_pred, y, stats)
 
 def __eval_pred(model, x, y, args, stats):
 	std, y_pred = model.predict(x, return_std=True)
@@ -57,9 +56,9 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 	for x in data_iter:
 		# normalization
-		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		x, y = model.format_data(x)
-		norm_x, norm_y = model.format_data(norm_x)
+		norm_x = utils.normalize(x, stats, args['normalization_method'])
+		norm_y = utils.normalize(y, stats, args['normalization_method'])
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 
 		history = model.model.fit(x_train, y_train,
@@ -97,7 +96,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
 			 	spamwriter = csv.writer(f)
-			 	spamwriter.writerow([new_loss, mse, mse_test, mse_valid, mean_std, std_std])
+			 	spamwriter.writerow([args['timesteps_in'], new_loss, mse, mse_test, mse_valid, mean_std, std_std])
 
 
 if __name__ == '__main__':
