@@ -48,3 +48,15 @@ def randomize_label(model, x):
 	# remove pose
 	x[rand_idx[:n],:,:-model.label_dim] = 0
 	return x
+
+def expand_modalities(model, x, for_validation=False):
+	if for_validation:
+		# remove the ground truth that we are trying to predict
+		x_condition = np.copy(x)
+		x_condition[:,model.timesteps_in:] = 0
+
+		return x_condition, x
+
+	if model.supervised:
+		x = randomize_label(model, x)
+	return expand_time(model, x)

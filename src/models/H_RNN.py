@@ -64,11 +64,7 @@ class H_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as HH_RNN
 		'''
-		if for_validation:
-			return x, x
-		if self.supervised:
-			x = formatter.randomize_label(self, x)
-		return formatter.expand_time(self, x)
+		return formatter.expand_modalities(self, x, for_validation)
 
 	def predict(self, x, return_std=False):
 		# assume data is alrady formatted

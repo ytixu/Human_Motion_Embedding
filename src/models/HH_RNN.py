@@ -10,12 +10,14 @@ from format_data import formatter
 class HH_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
 		self.timesteps = args['timesteps']
-		self.timesteps_in = args['timesteps_in']
+		self.timesteps_in = args['timesteps_in'] # this is the number of frame we want to input for comparing against prediction baselines
 		self.unit_t = args['unit_timesteps']
 		self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.unit_t-1, self.timesteps, self.unit_t)
+
 		# indices relevant to prediction task must appear in hierarchies
 		assert self.timesteps_in-1 in self.hierarchies
 		assert self.timesteps-1 == self.hierarchies[-1]
+
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
@@ -97,11 +99,7 @@ class HH_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as H_RNN
 		'''
-		if for_validation:
-			return x, x
-		if self.supervised:
-			x = formatter.randomize_label(self, x)
-		return formatter.expand_time(self, x)
+		return formatter.expand_modalities(self, x, for_validation)
 
 	def predict(self, x, return_std=False):
 		# assume data is alrady formatted

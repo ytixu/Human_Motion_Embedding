@@ -74,3 +74,7 @@ def add(modality_partial, modality_complete, z_ref, return_std):
 	if return_std:
 		return np.std(diff, axis=0), z_new
 	return z_new
+
+
+def compare(model, data):
+	pass

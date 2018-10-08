@@ -24,7 +24,7 @@ def __to_numb_array(row):
 def __get_data(row):
 	train = np.mean(__to_numb_array(row[1]))
 	test = np.mean(__to_numb_array(row[2]))
-	valid = __to_numb_array(row[3])[SHORT_TERM_IDX]
+	valid = __to_numb_array(row[3])[SHORT_TERM_IDX] # TODO: fix this
 	std_mean = float(row[4])
 	std_std = float(row[5])
 	return [train, test], valid, [std_mean, std_std]
