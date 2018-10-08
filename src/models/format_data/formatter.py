@@ -21,6 +21,7 @@ def randomize_time(model, x):
 	'''
 	Randomly expand time-modalities.
 	For VL_RNN.
+	TODO: fix this
 	'''
 	n,t,d = x.shape
 	rand_idx = np.random.choice(n, model.expand_t, replace=False)

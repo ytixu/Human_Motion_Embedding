@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from keras import optimizers
+from embedding import pattern_matching
 
 RNN_UNIT = None
 
@@ -50,6 +51,12 @@ class AbstractModel:
 	def autoencode(self, x):
 		return self.model.predict(x)
 
+	def encode(self, x):
+		return self.encoder.predict(x)
+
+	def decode(self, x):
+		return self.decoder.predict(x)
+
 	@abstractmethod
 	def make_model(self): # build model
 		pass
@@ -74,13 +81,8 @@ class AbstractModel:
 		pass
 
 	@abstractmethod
-	def predict(self, x, return_std=False):
+	def predict(self, x, **kwargs):
 		'''
 		Motion prediction
-		Args
-			x: input data
-			return_std: whether we want to return std
-		Return
-			std, pred_y
 		'''
 		pass

@@ -70,8 +70,12 @@ def recover(x, stats):
 SHORT_TERM_IDX = [1,3,7,9]
 LONG_TERM_IDX = [11,13,15,17,19,21,23,24]
 
-def l2_error(y_pred, y_true, stats):
-	return np.mean(np.sqrt(np.sum(np.square(y_pred - y_true), -1)), 0)
+def l2_error(x1, x2):
+	'''
+	This will return one number if dim = 2
+	or will return a list if dim = 3
+	'''
+	return np.mean(np.sqrt(np.sum(np.square(x1, x2), -1)), 0)
 
 def __convert_expmap2euler(x, stats):
 	x = recover(x, stats)

@@ -49,8 +49,8 @@ def __data_generator(data_dir, stats, args):
 			x[i,:,:d] = data[i:i+t,:]
 
 		if args['supervised']:
-			name = __get_action_from_file(f)
-			x[:,:,-l+args['actions'][name]] = 1
+			action_name = __get_action_from_file(f)
+			x[:,:,-l+args['actions'][action_name]] = 1
 
 		yield x[:100]
 
@@ -77,7 +77,7 @@ def __data_generator_random(data_dir, stats, args, b):
 		sample_idx = np.random.choice(sample_n, b/conseq_n)
 
 		for j,sample_i in enumerate(sample_idx):
-			sub_data, name = data[sample_i]
+			sub_data, action_name = data[sample_i]
 			n,d = sub_data.shape
 			n = n - conseq_n - t + 1
 
@@ -86,7 +86,7 @@ def __data_generator_random(data_dir, stats, args, b):
 				x[j*conseq_n+k,:,:d] = sub_data[rand_idx+k:rand_idx+k+t]
 
 			if args['supervised']:
-				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][name]] = 1
+				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][action_name]] = 1
 		yield x
 
 def __load_validation_data(data_dir, stats, args):
@@ -96,17 +96,20 @@ def __load_validation_data(data_dir, stats, args):
 	files = glob.glob(data_dir+'/valid/*-cond.npy')
 	l = __label_dim(args)
 	d = stats['data_dim']
+	N = 8 # 8 samples per action type
 	ti,to = args['timesteps_in'],args['timesteps_out']
-	x = np.zeros((len(files)*4,args['timesteps'],d+l))
+	x = np.zeros((len(files)*N,args['timesteps'],d+l))
 
-	for i, f in enumerate(files):
-		s,e = i*4,(i+1)*4
+	for f in files:
+		action_idx = args['actions'][__get_action_from_file(f)]
+		s,e = action_idx*N,(action_idx+1)*N
 		x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
 		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
+		# x is sorted by action type
 
 		if args['supervised']:
-			name = __get_action_from_file(f)
-			x[s:e,:,-l+args['actions'][name]] = 1
+			x[s:e,:,-l+action_idx] = 1
+
 	return x
 
 # Get load and save path
@@ -210,8 +213,7 @@ def get_parse(mode):
 		for k in ['data_std', 'data_min', 'data_max']:
 			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
 
-		if args['supervised']:
-			args['actions'] = stats['action_list']
+		args['actions'] = stats['action_list']
 
 	# make output path
 	if not args['debug']:

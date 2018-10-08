@@ -101,18 +101,15 @@ class HH_RNN(abs_model.AbstractModel):
 		'''
 		return formatter.expand_modalities(self, x, for_validation)
 
-	def predict(self, x, return_std=False):
+	@override
+	def encode(self, x, modality=-1):
+		z = self.encoder.predict(x)
+		if modality > 0:
+			return z[:,self.__get_sup_index(modality)]
+
+	def predict(self, x, **kwargs):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
 
-		c = self.timesteps_in-1
-		z_ref = self.encoder.predict(x)[:,self.__get_sup_index(c)]
-		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[self.timesteps-1], z_ref, return_std=return_std)
-
-		if return_std:
-			std, z_pred = z_pred
-			return std, self.decoder.predict(z_pred)
-
-		return self.decoder.predict(z_pred)
+		return pattern_matching.raw_match(x, self, kwargs)

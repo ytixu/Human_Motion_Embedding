@@ -38,8 +38,6 @@ class Seq2Seq(abs_model.AbstractModel):
 	def format_data(self, x, for_validation=False):
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 
-	def predict(self, x, return_std=False):
+	def predict(self, x, **kwargs):
 		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
-		if return_std:
-			return [], x_pred
 		return x_pred

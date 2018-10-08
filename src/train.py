@@ -32,7 +32,10 @@ def __eval(model, x, y, args, stats):
 	return utils.l2_error(y_pred, y, stats)
 
 def __eval_pred(model, x, y, args, stats):
-	std, y_pred = model.predict(x, return_std=True)
+	std = []
+	y_pred = model.predict(x, return_std=True)
+	if len(y_pred) == 2: # TODO: need better way to detect this
+		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return std, utils.prediction_error(y_pred, y, stats)
 

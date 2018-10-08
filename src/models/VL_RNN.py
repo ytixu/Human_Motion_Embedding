@@ -64,7 +64,7 @@ class VL_RNN(abs_model.AbstractModel):
 			x = formatter.randomize_label(self, x)
 		return formatter.randomize_time(self, x)
 
-	def predict(self, x, method=pattern_matching.ADD, return_std=False):
+	def predict(self, x, **kwargs):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
@@ -72,13 +72,8 @@ class VL_RNN(abs_model.AbstractModel):
 		n,t,d = x.shape
 		x = np.reshape(x, (t,n/t,t,d))
 
-		c = self.timesteps_in-1
-		z_ref = self.encoder.predict(x[c])
-		# TODO: add other methods
-		z_pred = pattern_matching.add(self.embedding[c], self.embedding[self.timesteps-1], z_ref, return_std=return_std)
+		return pattern_matching.raw_match(x[c], self, kwargs)
 
-		if return_std:
-			std, z_pred = z_pred
-			return std, self.decoder.predict(z_pred)
-
-		return self.decoder.predict(z_pred)
+	@override
+	def encode(self, x, modality=-1):
+		return self.encoder.predict(x)
