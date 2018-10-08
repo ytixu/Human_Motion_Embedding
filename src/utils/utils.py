@@ -75,7 +75,7 @@ def l2_error(x1, x2):
 	This will return one number if dim = 2
 	or will return a list if dim = 3
 	'''
-	return np.mean(np.sqrt(np.sum(np.square(x1, x2), -1)), 0)
+	return np.mean(np.sqrt(np.sum(np.square(x1 - x2), -1)), 0)
 
 def __convert_expmap2euler(x, stats):
 	x = recover(x, stats)
