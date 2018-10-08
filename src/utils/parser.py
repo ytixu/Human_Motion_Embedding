@@ -86,9 +86,7 @@ def __data_generator_random(data_dir, stats, args, b):
 				x[j*conseq_n+k,:,:d] = sub_data[rand_idx+k:rand_idx+k+t]
 
 			if args['supervised']:
-				name = __get_action_from_file(f)
 				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][name]] = 1
-
 		yield x
 
 def __load_validation_data(data_dir, stats, args):
