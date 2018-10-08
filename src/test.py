@@ -22,29 +22,30 @@ def __load_embeddding(model, data_iter, args):
 # 	sub_emb = {k:model.embedding[k][rand_idx] for k in model.embedding}
 # 	return sub_emb
 
-def compare_pattern_match(x_valid, y_valid, sample, args):
-	c = model.timesteps-1
-	z_ref = model.encode(x_valid, modality=c)
+def compare_pattern_match(x_valid_norm, y_valid, model, args):
+	z_ref = model.encode(x_valid_norm, modality=model.timesteps_in-1)
 	z_pred = {}
 
-	for i, mode, z_matched = pattern_matching.batch_all_match(model, z_ref):
+	for i, mode, z_matched in pattern_matching.batch_all_match(model, z_ref):
 		if mode not in z_pred:
-			z_pred = np.zeros(z_ref.shape)
+			z_pred[mode] = np.zeros(z_ref.shape)
 		z_pred[mode][i] = z_matched
 
 	stats = args['input_data_stats']
+	y_valid_norm = utils.normalize(y_valid, stats, args['normalization_method'])
 	z_gt = model.encode(y_valid, modality=model.timesteps-1)
 	score = {}
 	N = 8 # 8 samples per action
 
 	for mode, z in z_pred.iteritems():
+		print z, z.shape, y_valid.shape
 		y_pred = model.decode(z)
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 		# iterate action:
 		score[mode] = {}
 		for action, i in args['actions'].iteritems():
 			s,e = i*8, (i+1)*8
-			score[mode][a] = { 'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
+			score[mode][action] = { 'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
 				'y': utils.prediction_error(y_pred[s:e], y_valid[s:e], stats)} # compare motion
 
 	return score
@@ -58,17 +59,18 @@ if __name__ == '__main__':
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
 
 	model = method_class(args)
+	print 'Load model ...'
 	model.load(args['load_path'])
 
 	print 'Load embedding ...'
 	__load_embeddding(model, data_iter, args)
 	#sub_emb = __sample_embedding(model, args)
 
-	# 1. PCA reduce and view modalities
 	print 'Computing PCA ...'
-	viz_embedding.plot_convex_hall(model.embedding, args)
+	#viz_embedding.plot_convex_hall(model.embedding, args)
 
-	# 2. Compare pattern matching methods
+	print 'Comparing pattern matching methods'
+	stats = args['input_data_stats']
 	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
-	x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
-	compare_pattern_match(x_valid, y_valid)
+	x_valid_norm = utils.normalize(x_valid, stats, args['normalization_method'])
+	print compare_pattern_match(x_valid_norm, y_valid, model, args)[(None, 'add')]

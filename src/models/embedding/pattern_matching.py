@@ -121,7 +121,7 @@ def match(z_ref, model, **kwargs):
 	if method == MEAN:
 		w_i = kwargs['w_i'] if 'w_i' in kwargs else []
 		n = kwargs['n'] if 'n' in kwargs else 5
-		return closest_mean(modality, z_ref, n, weights, w_i, dist)
+		return closest_mean(modality_complete, z_ref, n, weights, w_i, dist)
 
 	modality_partial = kwargs['modality_partial'] if 'modality_partial' in kwargs else model.embedding[model.timesteps_in-1]
 
@@ -162,8 +162,7 @@ def batch_all_match(model, sample_zs):
 		matched_z
 	'''
 
-	c = model.timesteps-1
-	modality_complete = model.embedding[c]
+	modality_complete = model.embedding[model.timesteps-1]
 	modality_partial = model.embedding[model.timesteps_in-1]
 	add_mean, diff = __modality_diff(modality_complete, modality_partial)
 
@@ -174,7 +173,7 @@ def batch_all_match(model, sample_zs):
 	for i in range(sample_zs.shape[0]):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
-			weights, w_i = get_weights(emb, sample_zs[i], dist_method=dist)
+			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)
 			kwargs['dist_method'] = dist
 			kwargs['weights'] = weights
 			kwargs['w_i'] = w_i
@@ -188,8 +187,8 @@ def batch_all_match(model, sample_zs):
 					for n in [5, 10, 50, 100]:
 						kwargs['n'] = n
 						mth_name_ = mth_name_+'-'+str(n)
-						z_matched = match(sample_zs[i], model, **kwargs)
 
+				z_matched = match(sample_zs[i], model, **kwargs)
 				yield i, (dist_name, mth_name_), z_matched
 
 		#add
