@@ -29,7 +29,7 @@ def __eval(model, x, y, args, stats):
 	'''
 	y_pred = model.autoencode(x)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return utils.l2_error(y_pred, y, stats)
+	return utils.l2_error(y_pred, y)
 
 def __eval_pred(model, x, y, args, stats):
 	std = []

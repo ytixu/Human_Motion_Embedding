@@ -144,10 +144,12 @@ def raw_match(x_ref, model, **kwargs):
 	c = model.timesteps_in-1
 	z_ref = model.encode(x_ref, modality=c)
 	# match
-	z_matched = match(z_ref, model, kwargs)
+	z_matched = match(z_ref, model, **kwargs)
 	# decode
-	x_matched = model.decode(z_matched)
-	return x_matched
+	if 'return_std' in kwargs and kwargs['return_std']:
+		std, z_matched = z_matched
+		return std, model.decode(z_matched)
+	return model.decode(z_matched)
 
 def batch_all_match(model, sample_zs):
 	'''
@@ -165,9 +167,8 @@ def batch_all_match(model, sample_zs):
 	modality_partial = model.embedding[model.timesteps_in-1]
 	add_mean, diff = __modality_diff(modality_complete, modality_partial)
 
-	kwargs = {
-		'modality_complete': modality_complete
-		'modality_partial' : modality_partial
+	kwargs = {'modality_complete': modality_complete,
+		  'modality_partial' : modality_partial
 	}
 
 	for i in range(sample_zs.shape[0]):
@@ -187,7 +188,7 @@ def batch_all_match(model, sample_zs):
 					for n in [5, 10, 50, 100]:
 						kwargs['n'] = n
 						mth_name_ = mth_name_+'-'+str(n)
-						z_matched = match(sample_zs[i], model, kwargs)
+						z_matched = match(sample_zs[i], model, **kwargs)
 
 				yield i, (dist_name, mth_name_), z_matched
 

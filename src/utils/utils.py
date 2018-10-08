@@ -91,10 +91,10 @@ def prediction_error(y_pred, y_true, stats):
 		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']])
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
 		print idx_to_use #TODO: remove
-		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use], stats)
+		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use])
 	else:
 		# use the same l2 for euclidean
-		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']], stats)
+		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']])
 
 def list_short_term(model, error):
 	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]

@@ -67,7 +67,7 @@ class H_RNN(abs_model.AbstractModel):
 		'''
 		return formatter.expand_modalities(self, x, for_validation)
 
-	@override
+	# overrides
 	def encode(self, x, modality=-1):
 		z = self.encoder.predict(x)
 		if modality > 0:
@@ -78,4 +78,4 @@ class H_RNN(abs_model.AbstractModel):
 		# and embedding is loaded
 		assert self.embedding != None
 
-		return pattern_matching.raw_match(x, self, kwargs)
+		return pattern_matching.raw_match(x, self, **kwargs)

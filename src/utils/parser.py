@@ -96,13 +96,14 @@ def __load_validation_data(data_dir, stats, args):
 	files = glob.glob(data_dir+'/valid/*-cond.npy')
 	l = __label_dim(args)
 	d = stats['data_dim']
-	N = 8 # 8 samples per action type
+	N = 4 # 4 samples per action type and sub-action sequence
 	ti,to = args['timesteps_in'],args['timesteps_out']
 	x = np.zeros((len(files)*N,args['timesteps'],d+l))
 
 	for f in files:
 		action_idx = args['actions'][__get_action_from_file(f)]
-		s,e = action_idx*N,(action_idx+1)*N
+		sseq = int(f.split('_')[-1].split('-')[0])-1
+		s,e = (2*action_idx+sseq)*N,(2*action_idx+sseq+1)*N
 		x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
 		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
 		# x is sorted by action type

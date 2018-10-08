@@ -72,8 +72,8 @@ class VL_RNN(abs_model.AbstractModel):
 		n,t,d = x.shape
 		x = np.reshape(x, (t,n/t,t,d))
 
-		return pattern_matching.raw_match(x[c], self, kwargs)
+		return pattern_matching.raw_match(x[c], self, **kwargs)
 
-	@override
+	# override
 	def encode(self, x, modality=-1):
 		return self.encoder.predict(x)
