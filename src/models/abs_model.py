@@ -79,7 +79,7 @@ class AbstractModel:
 		Motion prediction
 		Args
 			x: input data
-			return_std: return std
+			return_std: whether we want to return std
 		Return
 			std, pred_y
 		'''

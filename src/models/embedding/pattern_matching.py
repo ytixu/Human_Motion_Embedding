@@ -76,5 +76,16 @@ def add(modality_partial, modality_complete, z_ref, return_std):
 	return z_new
 
 
-def compare(model, data):
-	pass
+def compare_prediction(model, valid_data):
+	'''
+	Assume embedding for model is already loaded. Used in test.py.
+	Args
+		model: the model
+		valid_data: validation data
+	Return
+		Prediction score
+	'''
+	std, y_pred = model.predict(x, return_std=True)
+	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+	return std, utils.prediction_error(y_pred, y, stats)
+
