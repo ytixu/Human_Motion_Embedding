@@ -37,10 +37,14 @@ def randomize_time(model, x):
 
 def randomize_label(model, x):
 	'''
-	Randomly remove half of the labels.
+	Randomly remove action name or pose sequence.
 	Assume model.supervised == True.
 	'''
 	n = x.shape[0]
-	rand_idx = np.random.choice(n, n/2, replace=False)
-	x[rand_idx,:,-model.label_dim:] = 0
+	rand_idx = np.random.choice(n, n*2/3, replace=False)
+	n = len(rand_idx)/2
+	# remove name
+	x[rand_idx[n:],:,-model.label_dim:] = 0
+	# remove pose
+	x[rand_idx[:n],:,:-model.label_dim] = 0
 	return x
