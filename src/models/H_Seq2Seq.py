@@ -22,7 +22,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
 		self.output_dim = self.input_dim
-		self.expand_t = args['expand_time_bound']
 
 		return super(H_Seq2Seq, self).__init__(args)
 
@@ -39,7 +38,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.input_dim))(seq)
 				encoded[i] = encode_1(rs)
-			# TODO: support concat sequence of 1 item
 			return encode_reshape(K_layer.concatenate(encoded, axis=1))
 
 		encoded = encode_partials(reshaped)

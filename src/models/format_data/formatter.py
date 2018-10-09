@@ -17,21 +17,20 @@ def expand_time(model, x):
 	y = np.reshape(y, (-1, model.timesteps*len(model.hierarchies), y.shape[-1]))
 	return x, y
 
-def randomize_time(model, x):
+def expand_time(model, x):
 	'''
-	Randomly remove frames. For VL_RNN.
+	Reformat the data so that we can encode sequences of different lengths.
 	'''
 	n,t,d = x.shape
-	rand_ts = np.random.choice(t, n)
-	new_x = np.copy(x)
+	new_x = np.zeros((n*model.timesteps, t, d))
 
-	for i, idx in enumerate(rand_ts):
-		if idx+1 != self.timesteps:
-			if self.repeat_last:
-				new_x[i,idx+1:] = x[i,idx]
-			else:
-				new_x[i,idx+1:] = 0
-
+	for i in range(model.timesteps):
+		# the first i frames
+		new_x[i*n:(i+1)*n,:i+1] = x[:,:i+1]
+		# the rest of the frames
+		if model.repeat_last and i+1 != model.timesteps:
+			for j in range(i*n,(i+1)*n):
+				new_x[j,i+1:] = new_x[j,i]
 	return new_x, new_x
 
 def randomize_label(model, x):

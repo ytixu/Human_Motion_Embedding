@@ -63,7 +63,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		norm_y = utils.normalize(y, stats, args['normalization_method'])
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
-
+		print x_train.shape, y_train.shape, x_test.shape, y_test.shape
 		history = model.model.fit(x_train, y_train,
 					shuffle=True,
 					epochs=1,
