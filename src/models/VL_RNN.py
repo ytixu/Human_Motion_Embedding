@@ -4,7 +4,7 @@ import keras.layers as K_layer
 from keras.models import Model
 
 import abs_model
-from embedding import pattern_matching
+from embedding import pattern_matching, embedding_utils
 from format_data import formatter
 
 class VL_RNN(abs_model.AbstractModel):
@@ -42,34 +42,17 @@ class VL_RNN(abs_model.AbstractModel):
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def load_embedding(self, data, pred_only=False, new=False):
-		# assume data is alrady formatted
-		n,k,d = data.shape
-		t = len(self.hierarchies)
-		data = np.reshape(data, (t,n/t,k,d))
-		data = {h:data[i] for i,h in enumerate(self.hierarchies)}
+	def load_embedding(self, data, **kwargs):
+		embedding_utils.load_embedding(model, data, **kwargs)
 
-		if new or self.embedding is None:
-			self.embedding = {}
-
-		sets = [self.timesteps_in-1, self.timesteps-1] if pred_only else self.hierarchies
-
-		for i in sets:
-			zs = self.encoder.predict(data[i])
-			if i not in self.embedding:
-				self.embedding[i] = zs
-			else:
-				self.embedding[i] = np.concatenate([self.embedding[i], zs])
-
-
-	def format_data(self, x, for_validation=False):
+	def format_data(self, x, **kwargs):
 		'''
 		Reformat the data so that we can encode sequences of different lengths.
 		'''
-		if for_validation:
+		if 'for_validation' in kwargs and kwargs['for_validation']:
 			return x, x
 		if self.supervised:
-			x = formatter.randomize_label(self, x)
+			x = formatter.randomize_name(self, x)
 		return formatter.expand_time_vl(self, x)
 
 	def predict(self, x, **kwargs):

@@ -70,13 +70,13 @@ def closest_partial(modality_partial, modality_complete, z_ref, weights=[], dist
 	idx = np.argmin(weights)
 	return modality_complete[idx]
 
-def __modality_diff(m_to, m_from):
+def __modality_diff(m_from, m_to):
 	diff = m_to - m_from
 	add_mean = np.mean(diff, axis=0)
 	return add_mean, diff
 
 def add(modality_partial, modality_complete, z_ref, return_std):
-	add_mean, diff = __modality_diff(modality_complete, modality_partial)
+	add_mean, diff = __modality_diff(modality_partial, modality_complete)
 	z_new = z_ref + add_mean
 	if return_std:
 		return np.std(diff, axis=0), z_new
@@ -151,23 +151,24 @@ def raw_match(x_ref, model, **kwargs):
 		return std, model.decode(z_matched)
 	return model.decode(z_matched)
 
-def batch_all_match(model, sample_zs):
+def batch_all_match(model, sample_zs, modalities):
 	'''
 	Assume embedding for model is already loaded. Used in test.py.
 
 	Args
 		model: the model
 		sample_zs: the partial zs
+		modalities=(partial_idx, complete_idx)
 	Yield
 		matched_z
 	'''
 
-	modality_complete = model.embedding[model.timesteps-1]
-	modality_partial = model.embedding[model.timesteps_in-1]
-	add_mean, diff = __modality_diff(modality_complete, modality_partial)
+	modality_partial = model.embedding[modalities[0]]
+	modality_complete = model.embedding[modalities[1]]
+	add_mean, diff = __modality_diff(modality_partial, modality_complete)
 
-	kwargs = {'modality_complete': modality_complete,
-		  'modality_partial' : modality_partial
+	kwargs = {'modality_partial' : modality_partial
+			  'modality_complete': modality_complete,
 	}
 
 	for i in range(sample_zs.shape[0]):

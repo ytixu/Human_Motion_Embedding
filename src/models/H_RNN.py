@@ -46,26 +46,15 @@ class H_RNN(abs_model.AbstractModel):
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def load_embedding(self, data, pred_only=False, new=True):
-		# assume data is alrady formatted
-		if new or self.embedding is None:
-			self.embedding = {}
+	def load_embedding(self, data, **kwargs):
+		embedding_utils.load_embedding(model, data, **kwargs)
 
-		sets = [self.timesteps_in-1, self.timesteps-1] if pred_only else self.hierarchies
-
-		zs = self.encoder.predict(data)
-		for i in sets:
-			if i not in self.embedding:
-				self.embedding[i] = zs[:,i]
-			else:
-				self.embedding[i] = np.concatenate([self.embedding[i], zs[:,i]])
-
-	def format_data(self, x, for_validation=False):
+	def format_data(self, x, **kwargs):
 		'''
 		Reformat the output data for computing the autoencoding error
 		Same as HH_RNN
 		'''
-		return formatter.expand_modalities(self, x, for_validation)
+		return formatter.expand_modalities(self, x, **kwargs)
 
 	# overrides
 	def encode(self, x, modality=-1):

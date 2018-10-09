@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import sklearn.metrics.log_loss as sckit_log_loss
 
 import converter
 
@@ -68,7 +69,6 @@ def recover(x, stats):
 # error
 
 SHORT_TERM_IDX = [1,3,7,9]
-LONG_TERM_IDX = [11,13,15,17,19,21,23,24]
 
 def l2_error(x1, x2):
 	'''
@@ -96,23 +96,36 @@ def prediction_error(y_pred, y_true, stats):
 		# use the same l2 for euclidean
 		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']])
 
+def classification_error(y_pred, y_true, stats):
+	y_pred = y_pred[:,:,stats['data_dim']:]
+	relu_y_pred[y_pred<0]=0
+	return sckit_log_loss(y_true[:,:,stats['data_dim']:], relu_y_pred)
+
 def list_short_term(model, error):
 	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]
 	return error[idx]
 
 # pretty print scores
-def print_short_term_score(scores, name, keys):
+def print_score(scores, title, keys, print_title=True):
 	# borrowed from
 	# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/baselines.py#L190
-	print '=== %s ==='%(name)
-	print '{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}'.format('milliseconds', 80, 160, 380, 400)
+	if title is not None:
+		print '=== %s ==='%(title)
+
+	def format_row(name, values):
+		s = name + '\t |'
+		for v in values:
+			s + ' | %2.2f'%(v)
+		return s
+
+	idx = range(1,len(scores[keys[0]]),2)
+	if print_title:
+		print format_row('milliseconds', [40*(i+1) for i in idx])
 	for key in keys:
-		print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( key,
-			scores[key][1], scores[key][3], scores[key][7], scores[key][9] )
+		print format_row(key, scores[key][idx])
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)
-	print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( 'AVERAGE',
-		avg_score[1], avg_score[3], avg_score[7], avg_score[9] )
+	print format_row('AVERAGE', avg_score[idx])
 
 
 if __name__ == '__main__':

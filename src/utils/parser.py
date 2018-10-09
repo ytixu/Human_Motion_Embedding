@@ -25,7 +25,7 @@ def __get_stats(data_dir):
 def __get_action_from_file(f):
 	return os.path.basename(f).split('_')[0]
 
-def __label_dim(args):
+def __name_dim(args):
 	l = 0
 	if args['supervised']:
 		l = len(args['actions'])
@@ -34,14 +34,14 @@ def __label_dim(args):
 def __data_generator(data_dir, stats, args):
 	'''
 	Data generator for testing.
-	Return only the used_dims + one hot label (if applicable)
+	Return only the used_dims + one hot name (if applicable)
 	'''
 	t = args['timesteps']
 	for f in glob.glob(data_dir+'*.npy'):
 		data = np.load(f)[:,stats['dim_to_use']]
 		n,d = data.shape
 		n = n-t+1
-		l = __label_dim(args)
+		l = __name_dim(args)
 
 		x = np.zeros((n, t, d+l))
 		for i in range(n):
@@ -57,7 +57,7 @@ def __data_generator(data_dir, stats, args):
 def __data_generator_random(data_dir, stats, args, b):
 	'''
 	Data generator for training.
-	Return only the used_dims + one hot label (if applicable)
+	Return only the used_dims + one hot name (if applicable)
 	Similar to
 	https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/seq2seq_model.py#L435
 	'''
@@ -70,7 +70,7 @@ def __data_generator_random(data_dir, stats, args, b):
 		sample_n += 1
 
 	conseq_n = 5
-	l = __label_dim(args)
+	l = __name_dim(args)
 	x = np.zeros((b,t,stats['data_dim']+l))
 
 	for i in range(args['iterations']):
@@ -94,7 +94,7 @@ def __load_validation_data(data_dir, stats, args):
 	Load validation data into one matrix.
 	'''
 	files = glob.glob(data_dir+'/valid/*-cond.npy')
-	l = __label_dim(args)
+	l = __name_dim(args)
 	d = stats['data_dim']
 	N = 4 # 4 samples per action type and sub-action sequence
 	ti,to = args['timesteps_in'],args['timesteps_out']
@@ -186,7 +186,7 @@ def get_parse(mode):
 
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-rep', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
-	# ap.add_argument('-label', '--only_label', required=False, help='Only load data with this label', nargs = '*')
+	# ap.add_argument('-name', '--only_name', required=False, help='Only load data with this action name', nargs = '*')
 	ap.add_argument('-re', '--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
 	ap.add_argument('-no_save', '--no_save', action='store_true', help='Skip saving model (for training)')

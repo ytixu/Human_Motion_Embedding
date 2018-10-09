@@ -80,8 +80,8 @@ def plot_training_curve(args):
 	# Show or save plot
 	if args['save']:
 		filename = directory+'/'+name+'.png'
-		print 'Saving file to',filename
 		fig.savefig(filename)
 		plt.close(fig)
+		print 'Saved to',filename
 	else:
 		plt.show()

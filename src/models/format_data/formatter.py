@@ -20,6 +20,7 @@ def expand_time(model, x):
 def expand_time_vl(model, x):
 	'''
 	Reformat the data so that we can encode sequences of different lengths.
+	For VL_RNN
 	'''
 	n,t,d = x.shape
 	new_x = np.zeros((n*len(model.hierarchies), t, d))
@@ -33,7 +34,23 @@ def expand_time_vl(model, x):
 				new_x[j,h+1:] = new_x[j,h]
 	return new_x, new_x
 
-def randomize_label(model, x):
+def without_name(model, x):
+	'''
+	Return a copy of x without action name
+	'''
+	new_x = np.copy(x)
+	new_x[:,:,-model.name_dim:] = 0
+	return new_x
+
+def without_motion(model, x):
+	'''
+	Return a copy of x without pose information
+	'''
+	new_x = np.copy(x)
+	new_x[:,:,:-model.name_dim] = 0
+	return new_x
+
+def randomize_name(model, x):
 	'''
 	Randomly remove action name or pose sequence.
 	Assume model.supervised == True.
@@ -42,13 +59,22 @@ def randomize_label(model, x):
 	rand_idx = np.random.choice(n, n*2/3, replace=False)
 	n = len(rand_idx)/2
 	# remove name
-	x[rand_idx[n:],:,-model.label_dim:] = 0
+	x[rand_idx[n:],:,-model.name_dim:] = 0
 	# remove pose
-	x[rand_idx[:n],:,:-model.label_dim] = 0
+	x[rand_idx[:n],:,:-model.name_dim] = 0
 	return x
 
-def expand_modalities(model, x, for_validation=False):
-	if for_validation:
+EXPAND_NAMES_MODALITIES = ['name', 'motion', 'both']
+
+def expand_names(model, x):
+	new_x = {'both': np.copy(x),
+			 'name': without_motion(x),
+			 'motion': without_name(x)
+	}
+	return new_x, new_x
+
+def expand_modalities(model, x, **kwargs):
+	if 'for_validation' in kwargs and kwargs['for_validation']:
 		# remove the ground truth that we are trying to predict
 		x_condition = np.copy(x)
 		x_condition[:,model.timesteps_in:] = 0
@@ -56,5 +82,5 @@ def expand_modalities(model, x, for_validation=False):
 		return x_condition, x
 
 	if model.supervised:
-		x = randomize_label(model, x)
+		x = randomize_name(model, x)
 	return expand_time(model, x)

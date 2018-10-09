@@ -67,7 +67,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 	def load_embedding(self, data, pred_only=False, new=False):
 		pass
 
-	def format_data(self, x, for_validation=False):
+	def format_data(self, x, **kwargs):
 		# Same as Seq2Seq
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 

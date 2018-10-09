@@ -34,7 +34,7 @@ class Seq2Seq(abs_model.AbstractModel):
 		# no embedding
 		pass
 
-	def format_data(self, x, for_validation=False):
+	def format_data(self, x, **kwargs):
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 
 	def predict(self, x, **kwargs):

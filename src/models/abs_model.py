@@ -28,9 +28,9 @@ class AbstractModel:
 		self.supervised = args['supervised']
 
 		if self.supervised:
-			self.label_dim = len(args['actions'])
+			self.name_dim = len(args['actions'])
 			self.actions = args['actions']
-			self.input_dim += self.label_dim
+			self.input_dim += self.name_dim
 
 		# TODO: different output
 		self.output_dim = self.input_dim
@@ -62,19 +62,14 @@ class AbstractModel:
 		pass
 
 	@abstractmethod
-	def load_embedding(self, data, pred_only=False, reset=False):
+	def load_embedding(self, data,**kwargs):
 		'''
 		Populate self.embedding
-		Args
-			data: the data whose latent representations are used to populate the embedding
-			pred_only: only populate what's relevant for prediction task
-			reset: empty self.embedding and re-populat with data
 		'''
 		pass
 
-
 	@abstractmethod
-	def format_data(self, x, for_validation=False):
+	def format_data(self, x, **kwargs):
 		'''
 		Format the data to match the input and output of the model.
 		'''
