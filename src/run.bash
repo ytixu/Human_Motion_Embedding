@@ -11,18 +11,17 @@ for loss in "${loss_func[@]}"
 do
     for opt in "${optimizers[@]}"
     do
-        python train.py -m Seq2Seq -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters;
-        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters;
-        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep;
-        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep;
-        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters;
-        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep;
-        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep;
-        python train.py -m HH_RNN -t 30 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep;
-        python train.py -m HH_RNN -t 30 -to 10 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep;
-        python train.py -m HH_RNN -t 30 -to 10 -ut 5 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep;
-	python train.py -m H_Seq2Seq -t 30 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters;
-	python train.py -m H_Seq2Seq -t 30 -to 10 -ut 5 -ld $ld -loss $loss -opt $opt -iter $iters;
+        python train.py -m Seq2Seq -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters --no_save -gs 30000;
+        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters --no_save -gs 3000;
+        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep --no_save;
+        python train.py -m VL_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep --no_save -gs 30000;
+        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters --no_save;
+        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep --no_save;
+        python train.py -m H_RNN -t 20 -to 10 -ld $ld -loss $loss -opt $opt -hs 9 19 -iter $iters -rep --no_save -gs 30000;
+        python train.py -m HH_RNN -t 30 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters -rep --no_save -gs 30000;
+        python train.py -m HH_RNN -t 30 -to 10 -ut 5 -ld $ld -loss $loss -opt $opt -iter $iters -rep --no_save -gs 30000;
+	python train.py -m H_Seq2Seq -t 30 -to 10 -ld $ld -loss $loss -opt $opt -iter $iters --no_save -gs 30000;
+	python train.py -m H_Seq2Seq -t 30 -to 10 -ut 5 -ld $ld -loss $loss -opt $opt -iter $iters --no_save -gs 30000;
     done
 done;
 

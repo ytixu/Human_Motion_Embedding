@@ -17,20 +17,20 @@ def expand_time(model, x):
 	y = np.reshape(y, (-1, model.timesteps*len(model.hierarchies), y.shape[-1]))
 	return x, y
 
-def expand_time(model, x):
+def expand_time_vl(model, x):
 	'''
 	Reformat the data so that we can encode sequences of different lengths.
 	'''
 	n,t,d = x.shape
-	new_x = np.zeros((n*model.timesteps, t, d))
+	new_x = np.zeros((n*len(model.hierarchies), t, d))
 
-	for i in range(model.timesteps):
+	for i, h in enumerate(model.hierarchies):
 		# the first i frames
-		new_x[i*n:(i+1)*n,:i+1] = x[:,:i+1]
+		new_x[i*n:(i+1)*n,:h+1] = x[:,:h+1]
 		# the rest of the frames
-		if model.repeat_last and i+1 != model.timesteps:
+		if model.repeat_last and h+1 != model.timesteps:
 			for j in range(i*n,(i+1)*n):
-				new_x[j,i+1:] = new_x[j,i]
+				new_x[j,h+1:] = new_x[j,h]
 	return new_x, new_x
 
 def randomize_label(model, x):

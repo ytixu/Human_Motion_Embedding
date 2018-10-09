@@ -189,6 +189,7 @@ def get_parse(mode):
 	# ap.add_argument('-label', '--only_label', required=False, help='Only load data with this label', nargs = '*')
 	ap.add_argument('-re', '--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
+	ap.add_argument('-no_save', '--no_save', action='store_true', help='Skip saving model (for training)')
 
 	args = vars(ap.parse_args())
 

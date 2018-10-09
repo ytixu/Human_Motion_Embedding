@@ -14,11 +14,10 @@ def __eval_loss(model, history, args):
 	Save model only if loss improved.
 	'''
 	global LOSS
-	print history.history['loss']
 	new_loss = np.mean(history.history['loss'])
 	if new_loss < LOSS:
 		LOSS = new_loss
-		if SAVE_TO_DISK:
+		if SAVE_TO_DISK and not args['no_save']:
 			model.model.save_weights(args['save_path'], overwrite=True)
 		print 'New loss - ', LOSS
 	return new_loss
@@ -63,7 +62,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		norm_y = utils.normalize(y, stats, args['normalization_method'])
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
-		print x_train.shape, y_train.shape, x_test.shape, y_test.shape
 		history = model.model.fit(x_train, y_train,
 					shuffle=True,
 					epochs=1,

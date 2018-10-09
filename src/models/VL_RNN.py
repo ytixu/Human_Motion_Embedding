@@ -13,6 +13,12 @@ class VL_RNN(abs_model.AbstractModel):
 		self.timesteps_in = args['timesteps_in']
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
+                self.hierarchies = map(int, args['hierarchies']) if args['hierarchies'] is not None else range(self.timesteps)
+
+		# indices relevant to prediction task must appear in hierarchies
+		assert(self.timesteps_in-1 in self.hierarchies)
+		assert(self.timesteps-1 in self.hierarchies)
+
 		self.output_dim = self.input_dim
 
 		return super(VL_RNN, self).__init__(args)
@@ -38,13 +44,15 @@ class VL_RNN(abs_model.AbstractModel):
 
 	def load_embedding(self, data, pred_only=False, new=False):
 		# assume data is alrady formatted
-		n,t,d = data.shape
-		data = np.reshape(data, (t,n/t,t,d))
+		n,k,d = data.shape
+		t = len(self.hierarchies)
+		data = np.reshape(data, (t,n/t,k,d))
+		data = {h:data[i] for i,h in enumerate(self.hierarchies)}
 
 		if new or self.embedding is None:
 			self.embedding = {}
 
-		sets = [self.timesteps_in-1, t-1] if pred_only else range(t)
+		sets = [self.timesteps_in-1, self.timesteps-1] if pred_only else self.hierarchies
 
 		for i in sets:
 			zs = self.encoder.predict(data[i])
@@ -62,7 +70,7 @@ class VL_RNN(abs_model.AbstractModel):
 			return x, x
 		if self.supervised:
 			x = formatter.randomize_label(self, x)
-		return formatter.expand_time(self, x)
+		return formatter.expand_time_vl(self, x)
 
 	def predict(self, x, **kwargs):
 		# assume data is alrady formatted
