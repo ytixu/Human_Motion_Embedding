@@ -179,7 +179,6 @@ def get_parse(mode):
 	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
 	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
 	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
-	ap.add_argument('-exp', '--expand_time_bound', required=False, help='Expantion of time modality upper bound (only for VL_RNN)', default=10, type=int)
 	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
 	ap.add_argument('-opt', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
@@ -216,15 +215,16 @@ def get_parse(mode):
 
 		args['actions'] = stats['action_list']
 
-	# make output path
-	if not args['debug']:
-		if args[ 'save_path'] is None:
-			args['save_path'] = __get_model_path_name(args, 'save')
-		if args['log_path'] is None:
-			args['log_path'] = __get_model_path_name(args, 'log')
 
 	# load and output data
 	if mode == 'train':
+		# make output path
+		if not args['debug']:
+			if args[ 'save_path'] is None:
+				args['save_path'] = __get_model_path_name(args, 'save')
+			if args['log_path'] is None:
+				args['log_path'] = __get_model_path_name(args, 'log')
+
 		# TODO: add output_data
 		return (args,
 			__data_generator_random(args['input_data']+'/train/',

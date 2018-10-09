@@ -19,21 +19,19 @@ def expand_time(model, x):
 
 def randomize_time(model, x):
 	'''
-	Randomly expand time-modalities.
-	For VL_RNN.
-	TODO: fix this
+	Randomly remove frames. For VL_RNN.
 	'''
 	n,t,d = x.shape
-	rand_idx = np.random.choice(n, model.expand_t, replace=False)
-	new_x = np.zeros((n*rand_idx, t, d))
+	rand_ts = np.random.choice(t, n)
+	new_x = np.copy(x)
 
-	for i, idx in enumerate(rand_idx):
-		# the first i frames
-		new_x[i*n:(i+1)*n,:idx+1] = x[:,:idx+1]
-		# the rest of the frames
-		if self.repeat_last and idx+1 != self.timesteps:
-			for j in range(i*n,(i+1)*n):
-				new_x[j,idx+1:] = x[j,idx]
+	for i, idx in enumerate(rand_ts):
+		if idx+1 != self.timesteps:
+			if self.repeat_last:
+				new_x[i,idx+1:] = x[i,idx]
+			else:
+				new_x[i,idx+1:] = 0
+
 	return new_x, new_x
 
 def randomize_label(model, x):

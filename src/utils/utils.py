@@ -100,6 +100,21 @@ def list_short_term(model, error):
 	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]
 	return error[idx]
 
+# pretty print scores
+def print_short_term_score(scores, name, keys):
+	# borrowed from
+	# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/baselines.py#L190
+	print '=== %s ==='%(name)
+	print '{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}'.format('milliseconds', 80, 160, 380, 400)
+	for key in keys:
+		print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( action,
+			scores[key][1], scores[key][3], scores[key][7], scores[key][9] )
+	# get average
+	avg_score = np.mean(scores.values(), axis=0)
+	print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( 'AVERAGE',
+		avg_score[1], avg_score[3], avg_score[7], avg_score[9] )
+
+
 if __name__ == '__main__':
 	# unit testing
 	a = (np.random.rand(2,3,4)*2-1)*np.pi

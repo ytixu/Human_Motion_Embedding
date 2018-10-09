@@ -328,30 +328,11 @@ def get_baseline(to_type='euler'):
 	running_average_2 = __running_average(actions_dict, ACTIONS, 2, to_type)
 	running_average_4 = __running_average(actions_dict, ACTIONS, 4, to_type)
 
-	print("=== Zero-velocity (running avg. 1) ===")
-	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
-	for action in ACTIONS:
-		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
-			errs_constant_frame[action][1], errs_constant_frame[action][3],
-			errs_constant_frame[action][7], errs_constant_frame[action][9] ))
-
+	utils.print_short_term_score(errs_constant_frame, 'Zero-velocity (running avg. 1)', ACTIONS)
 	print()
-	print("=== Runnning avg. 2 ===")
-	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
-	for action in ACTIONS:
-		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
-			running_average_2[action][1], running_average_2[action][3],
-			running_average_2[action][7], running_average_2[action][9] ))
-
+	utils.print_short_term_score(running_average_2, 'Runnning avg. 2', ACTIONS)
 	print()
-	print("=== Runnning avg. 4 ===")
-	print("{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}".format("milliseconds", 80, 160, 380, 400))
-	for action in ACTIONS:
-		print("{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}".format( action,
-			running_average_4[action][1], running_average_4[action][3],
-			running_average_4[action][7], running_average_4[action][9] ))
-
-
+	utils.print_short_term_score(running_average_4, 'Runnning avg. 4', ACTIONS)
 
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
