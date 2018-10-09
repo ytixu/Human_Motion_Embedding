@@ -2,6 +2,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 import csv
+import json
 import numpy as np
 from sklearn import cross_validation
 
@@ -14,7 +15,8 @@ def __load_embeddding(model, data_iter, args):
 		x, _ = model.format_data(x)
 		x = utils.normalize(x, stats, args['normalization_method'])
 		model.load_embedding(x)
-		break # this gives a random sample of the embedding with the data_iter size
+		if args['random_embedding']:
+			break # this gives a random sample of the embedding with the data_iter size
 
 # def __sample_embedding(model, args):
 # 	n = model.embedding.values()[0].shape[0]
@@ -23,15 +25,13 @@ def __load_embeddding(model, data_iter, args):
 # 	return sub_emb
 
 def print_scores(scores):
-	actions = scores[scores.keys[0]].keys()
+	actions = scores[scores.keys()[0]].keys()
 	for mode in scores:
-		dist, method = mode
-		name = '%s, %s'%(method, dist) if dist else method
 		s = {a:scores[mode][a]['y'] for a in scores[mode]}
-		utils.print_short_term_score(s, name, actions)
+		utils.print_short_term_score(s, mode, actions)
 		print '---------------'
 		print 'z error', np.mean([scores[mode][a]['z'] for a in actions])
-		print()
+		print ''
 
 
 def compare_pattern_match(x_valid_norm, y_valid, model, args):
@@ -50,7 +50,6 @@ def compare_pattern_match(x_valid_norm, y_valid, model, args):
 	N = 8 # 8 samples per action
 
 	for mode, z in z_pred.iteritems():
-		print z, z.shape, y_valid.shape
 		y_pred = model.decode(z)
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 		# iterate action:
@@ -58,8 +57,8 @@ def compare_pattern_match(x_valid_norm, y_valid, model, args):
 		for action, i in args['actions'].iteritems():
 			s,e = i*8, (i+1)*8
 			scores[mode][action] = { 'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
-				'y': [utils.prediction_error(y_pred[s:e],
-						y_valid[s:e], stats)][:,model.timesteps_in:].tolist()} # compare motion
+				'y': (utils.prediction_error(y_pred[s:e],
+						y_valid[s:e], stats))[model.timesteps_in:].tolist()} # compare motion
 
 	# saving the output
 	if not args['debug']:
@@ -91,4 +90,4 @@ if __name__ == '__main__':
 	stats = args['input_data_stats']
 	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
 	x_valid_norm = utils.normalize(x_valid, stats, args['normalization_method'])
-	compare_pattern_match(x_valid_norm, y_valid, model, args)[(None, 'add')]
+	compare_pattern_match(x_valid_norm, y_valid, model, args)

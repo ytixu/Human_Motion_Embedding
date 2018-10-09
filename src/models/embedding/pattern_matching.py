@@ -180,16 +180,17 @@ def batch_all_match(model, sample_zs):
 
 			# select method
 			for method, mth_name in enumerate(iter_methods()[1:]): # skip add
-				kwargs['method'] = method
-				mth_name_ = mth_name
+				kwargs['method'] = method+1
 
-				if method == MEAN:
+				if method+1 == MEAN:
 					for n in [5, 10, 50, 100]:
 						kwargs['n'] = n
-						mth_name_ = mth_name_+'-'+str(n)
-
-				z_matched = match(sample_zs[i], model, **kwargs)
-				yield i, (dist_name, mth_name_), z_matched
+						mth_name_ = mth_name+'-'+str(n)
+						z_matched = match(sample_zs[i], model, **kwargs)
+						yield i, '%s, %s'%(dist_name, mth_name_), z_matched
+				else:
+					z_matched = match(sample_zs[i], model, **kwargs)
+					yield i, '%s, %s'%(dist_name, mth_name), z_matched
 
 		#add
-		yield i, (None, 'add'), sample_zs[i] + add_mean
+		yield i, 'add', sample_zs[i] + add_mean

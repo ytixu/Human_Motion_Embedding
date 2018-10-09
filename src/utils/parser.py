@@ -187,7 +187,7 @@ def get_parse(mode):
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-rep', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
 	# ap.add_argument('-label', '--only_label', required=False, help='Only load data with this label', nargs = '*')
-
+	ap.add_argument('-re', '--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
 
 	args = vars(ap.parse_args())
@@ -235,9 +235,16 @@ def get_parse(mode):
 				args['input_data_stats'], args))
 
 	assert(args['load_path'] is not None)
-	return (args,
-		__data_generator_random(args['input_data']+'/train/',
-			args['input_data_stats'], args, args['generator_size']),
+
+	data_iter = None
+	if args['random_embedding']:
+		data_iter = __data_generator_random(args['input_data']+'/train/',
+                        args['input_data_stats'], args, args['generator_size'])
+	else:
+		data_iter =  __data_generator(args['input_data']+'/train/',
+                        args['input_data_stats'], args)
+
+	return (args, data_iter,
 		__data_generator(args['input_data']+'/test/',
 			args['input_data_stats'], args),
 		__load_validation_data(args['input_data'],

@@ -107,7 +107,7 @@ def print_short_term_score(scores, name, keys):
 	print '=== %s ==='%(name)
 	print '{0: <16} | {1:4d} | {2:4d} | {3:4d} | {4:4d}'.format('milliseconds', 80, 160, 380, 400)
 	for key in keys:
-		print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( action,
+		print '{0: <16} | {1:.2f} | {2:.2f} | {3:.2f} | {4:.2f}'.format( key,
 			scores[key][1], scores[key][3], scores[key][7], scores[key][9] )
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)

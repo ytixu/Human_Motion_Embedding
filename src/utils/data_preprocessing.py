@@ -329,9 +329,9 @@ def get_baseline(to_type='euler'):
 	running_average_4 = __running_average(actions_dict, ACTIONS, 4, to_type)
 
 	utils.print_short_term_score(errs_constant_frame, 'Zero-velocity (running avg. 1)', ACTIONS)
-	print()
+	print ''
 	utils.print_short_term_score(running_average_2, 'Runnning avg. 2', ACTIONS)
-	print()
+	print ''
 	utils.print_short_term_score(running_average_4, 'Runnning avg. 4', ACTIONS)
 
 if __name__ == '__main__':
