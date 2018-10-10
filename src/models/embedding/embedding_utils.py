@@ -33,3 +33,7 @@ def parse_load_embedding(model, data, **kwargs):
 			sets = [model.timesteps_in-1, model.timesteps-1]
 		return TIME_MODALITIES, model.hierarchies
 
+
+def interpolate(z_a, z_b, l=8):
+        dist = (z_b - z_a)/l
+        return np.array([z_a+i*dist for i in range(l+1)])

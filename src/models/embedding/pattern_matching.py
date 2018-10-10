@@ -14,10 +14,10 @@ MAD = 1 # l1
 COS = 2 # cosine distance
 
 def iter_methods():
-	return ['add', 'mean', 'closest', 'closest_partial']
+	return ['add', 'mean']#, 'closest', 'closest_partial']
 
 def iter_distance():
-	return ['l2', 'l1', 'cos']
+	return ['l2']#, 'l1', 'cos']
 
 def __distance__(e1, e2, dist_method=MAD):
 	if dist_method == MSD:

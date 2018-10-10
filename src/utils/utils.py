@@ -62,8 +62,8 @@ def unormalize(x, stats, norm_method):
 
 def recover(x, stats):
 	rec_x = np.zeros((x.shape[0], x.shape[1], stats['orig_data_dim']))
-	rec_x[:,:] = self.data_mean
-	rec_x[:,:,stats['dim_to_use']] = x
+	rec_x[:,:,:] = stats['data_mean']
+	rec_x[:,:,stats['dim_to_use']] = x[:,:,:stats['data_dim']]
 	return rec_x
 
 # error
@@ -78,8 +78,9 @@ def l2_error(x1, x2):
 	return np.mean(np.sqrt(np.sum(np.square(x1 - x2), -1)), 0)
 
 def __convert_expmap2euler(x, stats):
+	#TODO: fix this
 	x = recover(x, stats)
-	x = converter.sequence_expmap2euler(y_true)
+	x = converter.sequence_expmap2euler(x)
 	x[:,:,:6] = 0
 	return x
 

@@ -3,14 +3,16 @@ matplotlib.use('Agg')
 
 import csv
 import json
+import operator
 from itertools import tee
 
 import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-from models.embedding import viz_embedding, pattern_matching
+from models.embedding import viz_embedding, pattern_matching, embedding_utils
 from models.format_data import formatter
+import viz_poses
 
 def __load_embeddding(model, data_iter, format_func, args, **kwargs):
 	stats = args['input_data_stats']
@@ -20,6 +22,26 @@ def __load_embeddding(model, data_iter, format_func, args, **kwargs):
 		model.load_embedding(x, **kwargs)
 		if args['random_embedding']:
 			break # this gives a random sample of the embedding with the data_iter size
+
+def __interpolate(model, stats, args):
+	# get 2 random vectors in embedding
+	sample_set = model.embedding[model.timesteps-1]
+	zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
+	# interpolate
+	itp = embedding_utils.interpolate(zs[0], zs[1])
+	# decode everything
+	itp = np.concatenate([zs[:1], itp], axis=0)
+	itp = np.concatenate([itp, zs[1:]], axis=0)
+	x = model.decode(itp)[:,range(0,model.timesteps,5)]
+	# visualize
+	titles = ['']*itp.shape[0]
+	titles[0] = 'start'
+	titles[-1] = 'end'
+	kwargs = {'row_titles':titles,
+		'parameterization':stats['parameterization'],
+		'title':'Interpolation'
+	}
+	viz_poses.plot_batch(x, stats, args, **kwargs)
 
 def __print_scores(scores, supervised):
 	actions = scores[scores.keys()[0]].keys()
@@ -92,11 +114,12 @@ def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
 
 	return output
 
-def __compare_pattern_matching_for_generation(model, args):
+def __compare_pattern_matching_for_generation(model, stats, args):
 	# create input for each action
 	x = np.zeros((model.name_dim, model.timesteps, model.input_dim))
 	for i in range(model.name_dim):
 		x[i,:,i-model.name_dim] = 1
+	action_order = sorted(args['actions'].items(), key=operator.itemgetter(1))
 
 	# encode input
 	z_ref = model.encode(x, modality=model.timesteps-1)
@@ -114,6 +137,17 @@ def __compare_pattern_matching_for_generation(model, args):
 			matches[key][mode]['y'] = model.decode(matches[key][mode]['z']).tolist()
 			matches[key][mode]['z'] = matches[key][mode]['z'].tolist()
 
+	# visualize
+	modes = matches[matches.keys()[0]].keys()
+	for a,i in args['actions'].iteritems():
+		for key in matches.keys():
+			x = np.array([matches[key][m]['y'][i] for m in modes])[:,range(0,model.timesteps,5)]
+			kwargs = {'row_titles':modes,
+				'parameterization':stats['parameterization'],
+				'title':'%s - %s'%(a,key)
+			}
+			viz_poses.plot_batch(x, stats, args, **kwargs)
+
 	if not args['debug']:
 		filename = args['output_dir']+'__compare_pattern_matching.json'
 		json.dump(matches, open(filename, 'w'))
@@ -125,6 +159,7 @@ if __name__ == '__main__':
 	output_dir = '.'.join(args['load_path'].split('.')[:-1])
 	args['output_dir'] = output_dir
 	args['quantitative_evaluation'] = True
+	stats = args['input_data_stats']
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
@@ -141,8 +176,10 @@ if __name__ == '__main__':
 	print 'Computing PCA ...'
 	# viz_embedding.plot_convex_hall(model.embedding, args)
 
+	print 'Test interpolaton ...'
+	#__interpolate(model, stats, args)
+
 	print 'Comparing pattern matching methods for prediction'
-	stats = args['input_data_stats']
 	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
 	# x_valid has model.timesteps_in frames
 	# y_valid has model.timesteps frames
@@ -150,7 +187,7 @@ if __name__ == '__main__':
 	x_valid_norm = utils.normalize(x_valid, stats, args['normalization_method'])
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
-	__compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args)
+	#__compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args)
 
 	if args['supervised']:
 		# format validation data
@@ -160,7 +197,7 @@ if __name__ == '__main__':
 
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_(no-name)'
-		__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
+		#__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
 
 		# load different embedding
 		data_iter, data_iter_ = tee(data_iter)
@@ -170,14 +207,14 @@ if __name__ == '__main__':
 		print 'Compare pattern matching methods for classification'
 		args['output_dir'] = output_dir + '_(classification)'
 		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		#__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
 
 		args['output_dir'] = output_dir + '_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		#__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
 
 		print 'Compare pattern matchin methods for generation'
 		args['output_dir'] = output_dir + '_(generation)'
-		__compare_pattern_matching_for_generation(model, args)
+		__compare_pattern_matching_for_generation(model, stats, args)
 
 

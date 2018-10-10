@@ -44,3 +44,4 @@ def plot_convex_hall(embedding, args):
 		print 'Saving file to',filename
 		plt.savefig(filename)
 		plt.close()
+
