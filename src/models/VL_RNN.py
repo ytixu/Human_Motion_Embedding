@@ -43,7 +43,22 @@ class VL_RNN(abs_model.AbstractModel):
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
 	def load_embedding(self, data, **kwargs):
-		embedding_utils.load_embedding(model, data, **kwargs)
+		m, set = embedding_utils.parse_load_embedding(self, data, **kwargs)
+
+		if m == embedding_utils.TIME_MODALITIES:
+			#reformat data to be key-ed by the modality
+			n,k,d = data.shape
+			t = len(self.hierarchies)
+			data = np.reshape(data, (t,n/t,k,d))
+			data = {h:data[i] for i,h in enumerate(self.hierarchies)}
+
+		# populate
+		for i in set:
+			zs = self.encoder.predict(data[i])
+			if i not in self.embedding:
+				self.embedding[i] = zs
+			else:
+				self.embedding[i] = np.concatenate([self.embedding[i], zs])
 
 	def format_data(self, x, **kwargs):
 		'''

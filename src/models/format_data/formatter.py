@@ -68,8 +68,8 @@ EXPAND_NAMES_MODALITIES = ['name', 'motion', 'both']
 
 def expand_names(model, x):
 	new_x = {'both': np.copy(x),
-			 'name': without_motion(x),
-			 'motion': without_name(x)
+			 'name': without_motion(model, x),
+			 'motion': without_name(model, x)
 	}
 	return new_x, new_x
 

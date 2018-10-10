@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import distance
+from tqdm import tqdm
 
 # pattern matching methods
 ADD = 0
@@ -16,7 +17,7 @@ def iter_methods():
 	return ['add', 'mean', 'closest', 'closest_partial']
 
 def iter_distance():
-	return ['l2', 'l1', 'manhattan', 'cos']
+	return ['l2', 'l1', 'cos']
 
 def __distance__(e1, e2, dist_method=MAD):
 	if dist_method == MSD:
@@ -167,11 +168,11 @@ def batch_all_match(model, sample_zs, modalities):
 	modality_complete = model.embedding[modalities[1]]
 	add_mean, diff = __modality_diff(modality_partial, modality_complete)
 
-	kwargs = {'modality_partial' : modality_partial
-			  'modality_complete': modality_complete,
+	kwargs = {'modality_partial' : modality_partial,
+			  'modality_complete': modality_complete
 	}
 
-	for i in range(sample_zs.shape[0]):
+	for i in tqdm(range(sample_zs.shape[0])):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
 			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)

@@ -1,8 +1,11 @@
 import numpy as np
 
-def load_embedding(model, data, **kwargs):
+TIME_MODALITIES = 0
+OTHER_MODALITIES = 1
+
+def parse_load_embedding(model, data, **kwargs):
 	'''
-	Populate the embedding space with data
+	Common routines for VL_RNN, H_RNN or HH_RNN
 	Args
 		model: RNN model (either VL_RNN, H_RNN or HH_RNN)
 		data: data to populate the embedding
@@ -13,31 +16,20 @@ def load_embedding(model, data, **kwargs):
 						for motion prediction task
 			modalities=model.hierarchies: the relevant modalities that we want
 						to populate
+	Return
+		TIME_MODALITIES or OTHER_MODALITIES
+		set: relevant modalities
 	'''
+
 	# reset embedding
 	if ('reset' in kwargs and kwargs['reset']) or model.embedding is None:
 		model.embedding = {}
 
 	# select relevant modalities
-	sets = model.hierarchies
 	if 'modalities' in kwargs:
-		sets = kwargs['modalities']
-		# assume data is key-ed by the modalities TODO: remove this
+		return OTHER_MODALITIES, kwargs['modalities']
 	else:
 		if 'pred_only' in kwargs and kwargs['pred_only']:
 			sets = [model.timesteps_in-1, model.timesteps-1]
+		return TIME_MODALITIES, model.hierarchies
 
-		# assume data is formatted according to model.format_data()
-		# reformat it so that it is key-ed by the modalities TODO: remove this
-		n,k,d = data.shape
-		t = len(model.hierarchies)
-		data = np.reshape(data, (t,n/t,k,d))
-		data = {h:data[i] for i,h in enumerate(model.hierarchies)}
-
-	# populate
-	for i in sets:
-		zs = model.encoder.predict(data[i])
-		if i not in model.embedding:
-			model.embedding[i] = zs
-		else:
-			model.embedding[i] = np.concatenate([model.embedding[i], zs])

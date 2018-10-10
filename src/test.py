@@ -24,25 +24,25 @@ def __load_embeddding(model, data_iter, format_func, args, **kwargs):
 def __print_scores(scores, supervised):
 	actions = scores[scores.keys()[0]].keys()
 	for mode in scores:
+		print '--------%s--------'%(mode)
 		s = {a:scores[mode][a]['y'] for a in scores[mode]}
-		utils.print_score(s, mode, actions)
+		utils.print_score(s, 'motion', actions)
 		if supervised:
-			print '--------name--------'
 			s = {a:scores[mode][a]['name'] for a in scores[mode]}
-			print utils.print_score(s, None, actions, False)
-		print '--------------------'
+			print utils.print_score(s, 'name', actions, False, precision='.4')
+		print '======='
 		print 'z', np.mean([scores[mode][a]['z'] for a in actions])
 		print ''
 
-def __compare_pattern_matching(x_valid_norm, y_valid, modalities, model, args):
-	_, _, partial_x_idx, complete_y_idx = modalities
+def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
+	partial_key, complete_key, partial_x_idx, complete_y_idx = modalities
 
 	# encode input
 	z_ref = model.encode(x_valid_norm, modality=partial_x_idx)
 
 	# get matches
 	z_pred = {}
-	for i, mode, z_matched in pattern_matching.batch_all_match(model, z_ref, modalities):
+	for i, mode, z_matched in pattern_matching.batch_all_match(model, z_ref, (partial_key, complete_key)):
 		if mode not in z_pred:
 			z_pred[mode] = {'z': np.zeros(z_ref.shape)}
 		z_pred[mode]['z'][i] = z_matched
@@ -69,28 +69,28 @@ def __compare_pattern_matching(x_valid_norm, y_valid, modalities, model, args):
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
 				'y': (utils.prediction_error(y_pred[s:e],
-						y_valid[s:e], stats)[:,-pred_n:]).tolist()  # compare motion
+						y_valid[s:e], stats)[-pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
-			args['supervised']:
-				scores[mode][action]['name'] = (utils.classification_error(
-					y_pred[s:e], y_valid[s:e], stats)[:,-pred_n:])
+			if args['supervised']:
+				scores[mode][action]['name'] = utils.classification_error(
+					y_pred[s:e], y_valid[s:e], stats)[-pred_n:]
 
 	for mode in z_pred:
-		z_pred[mode]['y'] = z_pred[mode]['y'].tolist()
-		z_pred[mode]['z'] = z_pred[mode]['z'].tolist()
-	z_pred['x'] = x_valid_norm.tolist()
+		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
+		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
+	z_pred['y_gt'] = y_valid_norm[:,-pred_n:].tolist()
 
 	__print_scores(scores, args['supervised'])
 
-	output = {'score': score, 'predictions':z_pred}
+	output = {'scores': scores, 'predictions':z_pred}
 	# saving the output
 	if not args['debug']:
 			filename = args['output_dir']+'__compare_pattern_matching.json'
 			json.dump(output, open(filename, 'w'))
 			print 'Saved to ', filename
 
-	return scores
+	return output
 
 def __compare_pattern_matching_for_generation(model, args):
 	# create input for each action
@@ -102,15 +102,17 @@ def __compare_pattern_matching_for_generation(model, args):
 	z_ref = model.encode(x, modality=model.timesteps-1)
 	# find match
 	matches = {'both':{}, 'motion':{}}
-	for key in matches:
+	for key in matches.keys():
 		modalities = ['name', key]
 		for i, mode, z_matched in pattern_matching.batch_all_match(model, z_ref, modalities):
 			if mode not in matches[key]:
-				matches[mode] = {'z': np.zeros(z_ref)}
-			matches[mode]['z'][i] = z_matched
+				matches[key][mode] = {'z': np.zeros(z_ref.shape)}
+			matches[key][mode]['z'][i] = z_matched
 
-		matches[mode]['y'] = model.decode(matches[mode]['z']).tolist()
-		matches[mode]['z'] = matches[mode]['z'].tolist()
+	for key in matches.keys():
+		for mode in matches[key].keys():
+			matches[key][mode]['y'] = model.decode(matches[key][mode]['z']).tolist()
+			matches[key][mode]['z'] = matches[key][mode]['z'].tolist()
 
 	if not args['debug']:
 		filename = args['output_dir']+'__compare_pattern_matching.json'
@@ -137,7 +139,7 @@ if __name__ == '__main__':
 	__load_embeddding(model, data_iter_, model.format_data, args)
 
 	print 'Computing PCA ...'
-	viz_embedding.plot_convex_hall(model.embedding, args)
+	# viz_embedding.plot_convex_hall(model.embedding, args)
 
 	print 'Comparing pattern matching methods for prediction'
 	stats = args['input_data_stats']
@@ -152,9 +154,9 @@ if __name__ == '__main__':
 
 	if args['supervised']:
 		# format validation data
-		x_valid_no_name = formatter.without_name(x_valid_norm)
+		x_valid_no_name = formatter.without_name(model, x_valid_norm)
 		y_valid_norm = utils.normalize(y_valid, stats, args['normalization_method'])
-		y_valid_no_name = formatter.without_name(y_valid_norm)
+		y_valid_no_name = formatter.without_name(model, y_valid_norm)
 
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_(no-name)'
@@ -163,7 +165,7 @@ if __name__ == '__main__':
 		# load different embedding
 		data_iter, data_iter_ = tee(data_iter)
 		kwargs = {'modalities': formatter.EXPAND_NAMES_MODALITIES}
-		__load_embeddding(model, data_iter_, formatter.expand_names, args)
+		__load_embeddding(model, data_iter_, lambda x: formatter.expand_names(model, x), args, **kwargs)
 
 		print 'Compare pattern matching methods for classification'
 		args['output_dir'] = output_dir + '_(classification)'

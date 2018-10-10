@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import sklearn.metrics.log_loss as sckit_log_loss
+from sklearn.metrics import log_loss as sckit_log_loss
 
 import converter
 
@@ -97,32 +97,33 @@ def prediction_error(y_pred, y_true, stats):
 		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']])
 
 def classification_error(y_pred, y_true, stats):
-	y_pred = y_pred[:,:,stats['data_dim']:]
-	relu_y_pred[y_pred<0]=0
-	return sckit_log_loss(y_true[:,:,stats['data_dim']:], relu_y_pred)
+	relu_y_pred = y_pred[:,:,stats['data_dim']:]
+	relu_y_pred[relu_y_pred<0]=0
+	y_true = y_true[:,:,stats['data_dim']:]
+	return [sckit_log_loss(y_true[:,i], relu_y_pred[:,i]) for i in range(y_true.shape[1])]
 
 def list_short_term(model, error):
 	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]
 	return error[idx]
 
 # pretty print scores
-def print_score(scores, title, keys, print_title=True):
+def print_score(scores, title, keys, print_title=True, precision='.2'):
 	# borrowed from
 	# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/baselines.py#L190
 	if title is not None:
 		print '=== %s ==='%(title)
 
-	def format_row(name, values):
-		s = name + '\t |'
+	def format_row(name, values, p=precision):
+		s = '{0: <16}'.format(name)
 		for v in values:
-			s + ' | %2.2f'%(v)
+			s = s + (' | %'+p+'f')%(v)
 		return s
 
 	idx = range(1,len(scores[keys[0]]),2)
 	if print_title:
-		print format_row('milliseconds', [40*(i+1) for i in idx])
-	for key in keys:
-		print format_row(key, scores[key][idx])
+		print format_row('milliseconds', [40*(i+1) for i in idx], p='.0')
+	#for key in keys:
+	#	print format_row(key, np.array(scores[key])[idx])
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)
 	print format_row('AVERAGE', avg_score[idx])

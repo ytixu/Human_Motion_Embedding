@@ -4,7 +4,7 @@ import keras.layers as K_layer
 from keras.models import Model
 
 import abs_model
-from embedding import pattern_matching
+from embedding import pattern_matching, embedding_utils
 from format_data import formatter
 
 class HH_RNN(abs_model.AbstractModel):
@@ -80,7 +80,24 @@ class HH_RNN(abs_model.AbstractModel):
 		return (i+1)/self.unit_t-1
 
 	def load_embedding(self, data, **kwargs):
-		embedding_utils.load_embedding(model, data, **kwargs)
+		m, set = embedding_utils.parse_load_embedding(self, data, **kwargs)
+
+		if m == embedding_utils.TIME_MODALITIES:
+			zs = self.encoder.predict(data)
+			for i in set:
+				z_i = self.__get_sup_index(i)
+				if i not in self.embedding:
+					self.embedding[i] = zs[:,z_i]
+				else:
+					self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
+		else:
+			for i in set:
+				zs = self.encoder.predict(data[i])
+                                if i not in self.embedding:
+                                        self.embedding[i] = zs[:,-1]
+                                else:
+                                        self.embedding[i] = np.concatenate([self.embedding[i], zs[:,-1]])
+
 
 	def format_data(self, x, **kwargs):
 		'''
