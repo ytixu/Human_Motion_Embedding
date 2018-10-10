@@ -35,12 +35,10 @@ def get_weights(modality, z_ref, dist_method=MAD):
 	w_i = np.argsort(weights)
 	return weights, w_i
 
-def closest(modality, z_ref, weights=[], dist_method=MAD): #, return_weight=False):
+def closest(modality, z_ref, weights=[], dist_method=MAD):
 	if not any(weights):
 		weights = __get_dist(modality, z_ref, dist_method)
 	idx = np.argmin(weights)
-	# if return_weight:
-	# 	return modality[idx], weights[idx]
 	return modality[idx]
 
 def __normalized_distance_mean(modality, weights, w_i):
@@ -167,6 +165,9 @@ def batch_all_match(model, sample_zs, modalities):
 	modality_partial = model.embedding[modalities[0]]
 	modality_complete = model.embedding[modalities[1]]
 	add_mean, diff = __modality_diff(modality_partial, modality_complete)
+	std = np.std(diff, 0)
+	#TODO: remove this
+	#print std.shape, np.std(std), np.mean(std)
 
 	kwargs = {'modality_partial' : modality_partial,
 			  'modality_complete': modality_complete
