@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from keras import optimizers
-from embedding import pattern_matching
+from utils import pattern_matching
 
 RNN_UNIT = None
 

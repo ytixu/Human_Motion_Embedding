@@ -4,8 +4,7 @@ import keras.layers as K_layer
 from keras.models import Model
 
 import abs_model
-from embedding import pattern_matching, embedding_utils
-from format_data import formatter
+from utils import pattern_matching, embedding_utils, formatter
 
 class HH_RNN(abs_model.AbstractModel):
 	def __init__(self, args):

@@ -10,8 +10,7 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-from models.embedding import viz_embedding, pattern_matching, embedding_utils
-from models.format_data import formatter
+from models.utils import viz_embedding, pattern_matching, embedding_utils, formatter
 import viz_poses
 
 def __load_embeddding(model, data_iter, args, **kwargs):

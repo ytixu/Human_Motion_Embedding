@@ -4,7 +4,7 @@ import keras.layers as K_layer
 from keras.models import Model
 
 import abs_model
-from embedding import pattern_matching
+from utils import pattern_matching
 
 class H_Seq2Seq(abs_model.AbstractModel):
 	def __init__(self, args):

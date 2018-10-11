@@ -3,7 +3,7 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-from models.format_data import formatter
+from models.utils import formatter
 
 CV_SPLIT = 0.2
 LOSS = 1000
