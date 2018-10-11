@@ -134,8 +134,8 @@ def print_score(scores, title, keys, print_title=True, precision='.2'):
 	idx = range(1,len(scores[keys[0]]),2)
 	if print_title:
 		print format_row('milliseconds', [40*(i+1) for i in idx], p='.0')
-	for key in keys:
-		print format_row(key, np.array(scores[key])[idx])
+	#for key in keys:
+	#	print format_row(key, np.array(scores[key])[idx])
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)
 	print format_row('AVERAGE', avg_score[idx])

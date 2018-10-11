@@ -14,10 +14,10 @@ MAD = 1 # l1
 COS = 2 # cosine distance
 
 def iter_methods():
-	return ['add', 'mean']#, 'closest', 'closest_partial']
+	return ['add', 'mean', 'closest', 'closest_partial']
 
 def iter_distance():
-	return ['l2']#, 'l1', 'cos']
+	return ['l2', 'l1', 'cos']
 
 def __distance__(e1, e2, dist_method=MAD):
 	if dist_method == MSD:
@@ -166,8 +166,6 @@ def batch_all_match(model, sample_zs, modalities):
 	modality_complete = model.embedding[modalities[1]]
 	add_mean, diff = __modality_diff(modality_partial, modality_complete)
 	std = np.std(diff, 0)
-	#TODO: remove this
-	#print std.shape, np.std(std), np.mean(std)
 
 	kwargs = {'modality_partial' : modality_partial,
 			  'modality_complete': modality_complete
@@ -176,6 +174,9 @@ def batch_all_match(model, sample_zs, modalities):
 	for i in tqdm(range(sample_zs.shape[0])):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
+			#TODO: remove this
+			#if dist_name in ['l2','cos']: continue 
+
 			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)
 			kwargs['dist_method'] = dist
 			kwargs['weights'] = weights
@@ -186,14 +187,14 @@ def batch_all_match(model, sample_zs, modalities):
 				kwargs['method'] = method+1
 
 				if method+1 == MEAN:
-					for n in [5, 10, 50, 100]:
+					for n in [5,50]:
 						kwargs['n'] = n
 						mth_name_ = mth_name+'-'+str(n)
 						z_matched = match(sample_zs[i], model, **kwargs)
-						yield i, '%s, %s'%(dist_name, mth_name_), z_matched
+						yield i, '%s(%s)'%(mth_name_,dist_name), z_matched
 				else:
 					z_matched = match(sample_zs[i], model, **kwargs)
-					yield i, '%s, %s'%(dist_name, mth_name), z_matched
+					yield i, '%s(%s)'%(mth_name,dist_name), z_matched
 
 		#add
 		yield i, 'add', sample_zs[i] + add_mean

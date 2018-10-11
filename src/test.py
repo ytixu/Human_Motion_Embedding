@@ -33,6 +33,7 @@ def __interpolate(model, stats, args):
 	itp = np.concatenate([zs[:1], itp], axis=0)
 	itp = np.concatenate([itp, zs[1:]], axis=0)
 	x = model.decode(itp)[:,range(0,model.timesteps,5)]
+	x = utils.unormalize(x, stats, args['normalization_method'])
 	# visualize
 	titles = ['']*itp.shape[0]
 	titles[0] = 'start'
@@ -82,12 +83,12 @@ def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
 	for mode, matched in z_pred.iteritems():
 		z = matched['z']
 		y_pred = model.decode(z)
-		z_pred[mode]['y'] = y_pred
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+		z_pred[mode]['y'] = y_pred
 		# iterate action:
 		scores[mode] = {}
 		for action, i in args['actions'].iteritems():
-			s,e = i*8, (i+1)*8
+			s,e = i*N, (i+1)*N
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
 				'y': (utils.prediction_error(y_pred[s:e],
@@ -98,17 +99,33 @@ def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
 				scores[mode][action]['name'] = utils.classification_error(
 					y_pred[s:e], y_valid[s:e], stats)[-pred_n:]
 
+	modes = sorted(z_pred.keys())
+	print modes
 	for mode in z_pred:
 		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
 		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
-	z_pred['y_gt'] = y_valid_norm[:,-pred_n:].tolist()
+	z_pred['y_gt'] = y_valid[:,-pred_n:].tolist()
 
+	# print score
 	__print_scores(scores, args['supervised'])
 
-	output = {'scores': scores, 'predictions':z_pred}
+	# visualize
+	for action,i in args['actions'].iteritems():
+		x = np.concatenate([[z_pred['y_gt'][i*N]], [z_pred[m]['y'][i*N] for m in modes]], axis=0)
+		kwargs = {'row_titles':['gt'] + modes,
+			'parameterization':stats['parameterization'],
+			'title':action
+		}
+		if x.shape[1] == model.timesteps:
+			x = x[:,range(0,model.timesteps,5)]
+		viz_poses.plot_batch(x, stats, args, **kwargs)
+		if args['debug']: break # just show one
+
 	# saving the output
+	output = {'scores': scores, 'predictions':z_pred}
+
 	if not args['debug']:
-			filename = args['output_dir']+'__compare_pattern_matching.json'
+			filename = args['output_dir']+'.json'
 			json.dump(output, open(filename, 'w'))
 			print 'Saved to ', filename
 
@@ -134,22 +151,25 @@ def __compare_pattern_matching_for_generation(model, stats, args):
 
 	for key in matches.keys():
 		for mode in matches[key].keys():
-			matches[key][mode]['y'] = model.decode(matches[key][mode]['z']).tolist()
+			y_pred = model.decode(matches[key][mode]['z'])
+			y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+			matches[key][mode]['y'] = y_pred.tolist()
 			matches[key][mode]['z'] = matches[key][mode]['z'].tolist()
 
 	# visualize
 	modes = matches[matches.keys()[0]].keys()
-	for a,i in args['actions'].iteritems():
+	for action,i in args['actions'].iteritems():
 		for key in matches.keys():
 			x = np.array([matches[key][m]['y'][i] for m in modes])[:,range(0,model.timesteps,5)]
 			kwargs = {'row_titles':modes,
 				'parameterization':stats['parameterization'],
-				'title':'%s - %s'%(a,key)
+				'title':'%s - %s'%(action,key)
 			}
 			viz_poses.plot_batch(x, stats, args, **kwargs)
+		if args['debug']: break # just show two
 
 	if not args['debug']:
-		filename = args['output_dir']+'__compare_pattern_matching.json'
+		filename = args['output_dir']+'.json'
 		json.dump(matches, open(filename, 'w'))
 		print 'Saved to ', filename
 
@@ -174,10 +194,12 @@ if __name__ == '__main__':
 	__load_embeddding(model, data_iter_, model.format_data, args)
 
 	print 'Computing PCA ...'
-	# viz_embedding.plot_convex_hall(model.embedding, args)
+	args['output_dir'] = output_dir + '_PCA'
+	viz_embedding.plot_convex_hall(model.embedding, args)
 
 	print 'Test interpolaton ...'
-	#__interpolate(model, stats, args)
+	args['output_dir'] = output_dir + '_interpolation'
+	__interpolate(model, stats, args)
 
 	print 'Comparing pattern matching methods for prediction'
 	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
@@ -187,7 +209,8 @@ if __name__ == '__main__':
 	x_valid_norm = utils.normalize(x_valid, stats, args['normalization_method'])
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
-	#__compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args)
+	args['output_dir'] = output_dir + '_pattern_matching'
+	__compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args)
 
 	if args['supervised']:
 		# format validation data
@@ -196,8 +219,8 @@ if __name__ == '__main__':
 		y_valid_no_name = formatter.without_name(model, y_valid_norm)
 
 		print 'Compare pattern matching methods for prediction without name'
-		args['output_dir'] = output_dir + '_(no-name)'
-		#__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
+		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
+		__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
 
 		# load different embedding
 		data_iter, data_iter_ = tee(data_iter)
@@ -205,16 +228,16 @@ if __name__ == '__main__':
 		__load_embeddding(model, data_iter_, lambda x: formatter.expand_names(model, x), args, **kwargs)
 
 		print 'Compare pattern matching methods for classification'
-		args['output_dir'] = output_dir + '_(classification)'
+		args['output_dir'] = output_dir + '_pattern_matching_(classification)'
 		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
-		#__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
 
-		args['output_dir'] = output_dir + '_(classification-to-both)'
+		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		#__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
 
 		print 'Compare pattern matchin methods for generation'
-		args['output_dir'] = output_dir + '_(generation)'
+		args['output_dir'] = output_dir + '_pattern_matching_(generation)'
 		__compare_pattern_matching_for_generation(model, stats, args)
 
 
