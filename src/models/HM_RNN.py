@@ -25,10 +25,13 @@ class HM_RNN(abs_model.AbstractModel):
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
-		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
-		# for different modalities
-		self.modality_dims = [args['data_dim'], len(args['actions'])]
+		# for different sensorimotor modalities
+		self.signal_dim = [args['data_dim'], len(args['actions'])]
+		self.signal_types = formatter.EXPAND_NAMES_MODALITIES # motion, name, both
+		self.signal_n = len(self.signal_types)
+
+		self.sup_hierarchies = [self.__get_sup_index(h, s) for s in self.signal_types for h in self.hierarchies]
 
 		return super(HM_RNN, self).__init__(args)
 
@@ -40,14 +43,14 @@ class HM_RNN(abs_model.AbstractModel):
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
 
 		# different encoders for different modalities
-		modal_encode = [None]*len(self.modality_dims)
-		for i,d in enumerate(self.modality_dims):
+		modal_encode = [None]*len(self.signal_dim)
+		for i,d in enumerate(self.signal_dim):
 			modal_encode[i] = abs_model.RNN_UNIT(self.latent_dim/2)
 		# global encoder for all the modalities together
 		global_encode = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
 		unit_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		global_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim))
+		global_encode_reshape = K_layer.Reshape((self.unit_n*self., self.latent_dim))
 
 		def encode_partials(seq, seq_dim, encoder):
 			encoded = [None]*self.unit_n
@@ -63,14 +66,14 @@ class HM_RNN(abs_model.AbstractModel):
 			idx = self.modalities
 			idx = [(0,idx[1]), (idx[1], self.timesteps)]
 
-			encoded = [None]*3
+			encoded = [None]*self.signal_n
 			for i,k in enumerate(idx):
 				s,e = k
 				rs = K_layer.Lambda(lambda x: x[:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
 				encoded[i] = encode_partials(rs)
 
 			encoded[2] = K_layer.Activation(activation)(K_layer.add([encoded[0], encoded[1]]))
-			for i in range(3):
+			for i in range(self.signal_n):
 				encoded[i] = global_encode(encoded[i])
 
 			return global_encode_reshape(K_layer.concatenate(encoded, axis=1))
@@ -107,29 +110,42 @@ class HM_RNN(abs_model.AbstractModel):
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def __get_sup_index(self, m_t, m_s):
-		# TODO: finish this
+	def __get_sup_index(self, m_t=-1, m_s=''):
+		if m_s == '':
+			return self.__get_sup_t_idx(m_t)
+		elif m_t == -1:
+			return self.__get_sup_s_idx(m_s)
+
+		m_s = self.signal_types.index(m_s)
 		return self.unit_t*m_s + (i+1)/self.unit_t-1
+
+	def __get_sup_t_idx(self, m_t):
+		return [self.unit_t*i + (m_t+1)/self.unit_t-1 for i in range(3)]
+
+	def __get_sup_s_idx(self, m_s):
+		m_s = self.signal_types.index(m_s)
+		return [self.unit_t*m_s + i for i in range(self.unit_t)]
 
 	def load_embedding(self, data, **kwargs):
 		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
 
+		def add_zs(i, z_i, zs):
+			zs = np.reshape(zs[:,z_i], (-1, self.latent_dim))
+			if i not in self.embedding:
+				self.embedding[i] = zs
+			else:
+				self.embedding[i] = np.concatenate([self.embedding[i], zs])
+
 		if m == embedding_utils.TIME_MODALITIES:
 			zs = self.encoder.predict(data)
 			for i in sets:
-				z_i = self.__get_sup_index(i)
-				if i not in self.embedding:
-					self.embedding[i] = zs[:,z_i]
-				else:
-					self.embedding[i] = np.concatenate([self.embedding[i], zs[:,z_i]])
+				z_i = self.__get_sup_t_idx(i)
+				add_zs(i, z_i, zs)
 		else:
 			for i in sets:
 				zs = self.encoder.predict(data[i])
-                                if i not in self.embedding:
-                                        self.embedding[i] = zs[:,-1]
-                                else:
-                                        self.embedding[i] = np.concatenate([self.embedding[i], zs[:,-1]])
-
+				z_i = self.__get_sup_s_idx(i)
+				add_zs(i, z_i, zs)
 
 	def format_data(self, x, **kwargs):
 		'''
@@ -139,15 +155,20 @@ class HM_RNN(abs_model.AbstractModel):
 		return formatter.expand_modalities(self, x, **kwargs)
 
 	# override
-	def encode(self, x, m_t=-1, m_s=-1):
+	def encode(self, x, modality=(-1,'')):
+		m_t,m_s = modality
 		z = self.encoder.predict(x)
-		if m_t > 0:
-			return z[:,self.__get_sup_index(modality)]
+		if m_t > 0 or m_s != '':
+			return z[:,self.__get_sup_index(modality, m_t, m_s)]
+		return z
 
 	def predict(self, x, **kwargs):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
+
+		if 'partial_encode_idx' not in kwargs:
+			kwargs['partial_encode_idx'] = (self.timesteps_in-1, 'both')
 
 		return pattern_matching.raw_match(x, self, **kwargs)
 
@@ -157,7 +178,7 @@ class HM_RNN(abs_model.AbstractModel):
 		assert self.embedding != None
 
 		# from motion modality to motion+name modality
-		kwargs['partial_encode_idx'] = model.timesteps-1
+		kwargs['partial_encode_idx'] = (self.timesteps-1, 'motion')
 		kwargs['modality_partial'] = 'motion'
 		kwargs['modality_complete'] = 'both'
 

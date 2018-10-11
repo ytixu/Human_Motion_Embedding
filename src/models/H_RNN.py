@@ -55,10 +55,10 @@ class H_RNN(abs_model.AbstractModel):
 		else:
 			for i in sets:
 				zs = self.encoder.predict(data[i])
-                                if i not in self.embedding:
-                                        self.embedding[i] = zs[:,-1]
-                                else:
-                                        self.embedding[i] = np.concatenate([self.embedding[i], zs[:,-1]])
+				if i not in self.embedding:
+					self.embedding[i] = zs[:,-1]
+				else:
+					self.embedding[i] = np.concatenate([self.embedding[i], zs[:,-1]])
 
 
 	def format_data(self, x, **kwargs):
@@ -73,6 +73,7 @@ class H_RNN(abs_model.AbstractModel):
 		z = self.encoder.predict(x)
 		if modality > 0:
 			return z[:,modality]
+		return z
 
 	def predict(self, x, **kwargs):
 		# assume data is alrady formatted

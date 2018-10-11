@@ -158,6 +158,7 @@ def __get_model_path_name(args, file_type):
 
 def get_parse(mode):
 	ap = argparse.ArgumentParser()
+	# TODO: adapt to conventional input format
 	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')

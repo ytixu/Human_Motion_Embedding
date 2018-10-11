@@ -64,7 +64,7 @@ def randomize_name(model, x):
 	x[rand_idx[:n],:,:-model.name_dim] = 0
 	return x
 
-EXPAND_NAMES_MODALITIES = ['name', 'motion', 'both']
+EXPAND_NAMES_MODALITIES = ['motion', 'name', 'both']
 
 def expand_names(model, x):
 	new_x = {'both': np.copy(x),
