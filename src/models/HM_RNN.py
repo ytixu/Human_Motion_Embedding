@@ -27,7 +27,7 @@ class HM_RNN(abs_model.AbstractModel):
 		self.unit_n = self.timesteps/self.unit_t
 
 		# for different sensorimotor modalities
-		self.signal_dim = [args['data_dim'], len(args['actions'])]
+		self.signal_dim = [args['input_data_stats']['data_dim'], len(args['actions'])]
 		self.signal_types = formatter.EXPAND_NAMES_MODALITIES # motion, name, both
 		self.signal_n = len(self.signal_types)
 
@@ -50,7 +50,7 @@ class HM_RNN(abs_model.AbstractModel):
 		global_encode = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
 		unit_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		global_encode_reshape = K_layer.Reshape((self.unit_n*self., self.latent_dim))
+		global_encode_reshape = K_layer.Reshape((self.unit_n*self.signal_n, self.latent_dim))
 
 		def encode_partials(seq, seq_dim, encoder):
 			encoded = [None]*self.unit_n
@@ -63,14 +63,14 @@ class HM_RNN(abs_model.AbstractModel):
 			encoded = None
 			# assume 2 modalities for now
 			# TODO: fix this
-			idx = self.modalities
-			idx = [(0,idx[1]), (idx[1], self.timesteps)]
+			idx = self.signal_dim
+			idx = [(0,idx[0]), (idx[0], self.input_dim)]
 
 			encoded = [None]*self.signal_n
 			for i,k in enumerate(idx):
 				s,e = k
-				rs = K_layer.Lambda(lambda x: x[:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
-				encoded[i] = encode_partials(rs)
+				rs = K_layer.Lambda(lambda x: x[:,:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
+				encoded[i] = encode_partials(rs, self.signal_dim[i], modal_encode[i])
 
 			encoded[2] = K_layer.Activation(activation)(K_layer.add([encoded[0], encoded[1]]))
 			for i in range(self.signal_n):
@@ -117,14 +117,14 @@ class HM_RNN(abs_model.AbstractModel):
 			return self.__get_sup_s_idx(m_s)
 
 		m_s = self.signal_types.index(m_s)
-		return self.unit_t*m_s + (i+1)/self.unit_t-1
+		return self.unit_n*m_s + (m_t+1)/self.unit_t-1
 
 	def __get_sup_t_idx(self, m_t):
-		return [self.unit_t*i + (m_t+1)/self.unit_t-1 for i in range(3)]
+		return [self.unit_n*i + (m_t+1)/self.unit_t-1 for i in range(3)]
 
 	def __get_sup_s_idx(self, m_s):
 		m_s = self.signal_types.index(m_s)
-		return [self.unit_t*m_s + i for i in range(self.unit_t)]
+		return [self.unit_n*m_s + i for i in range(self.unit_t)]
 
 	def load_embedding(self, data, **kwargs):
 		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
@@ -152,6 +152,7 @@ class HM_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as H_RNN
 		'''
+		kwargs['expand_all_names'] = True
 		return formatter.expand_modalities(self, x, **kwargs)
 
 	# override
@@ -159,7 +160,7 @@ class HM_RNN(abs_model.AbstractModel):
 		m_t,m_s = modality
 		z = self.encoder.predict(x)
 		if m_t > 0 or m_s != '':
-			return z[:,self.__get_sup_index(modality, m_t, m_s)]
+			return z[:,self.__get_sup_index(m_t, m_s)]
 		return z
 
 	def predict(self, x, **kwargs):
@@ -176,11 +177,12 @@ class HM_RNN(abs_model.AbstractModel):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
+		print self.embedding.keys()
 
 		# from motion modality to motion+name modality
 		kwargs['partial_encode_idx'] = (self.timesteps-1, 'motion')
-		kwargs['modality_partial'] = 'motion'
-		kwargs['modality_complete'] = 'both'
+		kwargs['modality_partial'] = self.embedding['motion']
+		kwargs['modality_complete'] = self.embedding['both']
 
 		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)

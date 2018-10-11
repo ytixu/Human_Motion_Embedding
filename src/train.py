@@ -109,6 +109,8 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 		# classification error with validation data
 		if args['supervised']:
+			# TODO: need to fix this for randomly expanded names
+			model.load_embedding(norm_x[rand_idx], class_only=True, new=True)
 			std, log_valid = __eval_class(model, y_motion_only, y_valid, args, stats)
 			mean_std_class, std_std_class = np.mean(std), np.std(std)
 			print 'Classification: MEAN STD, STD STD', mean_std_class, std_std_class
