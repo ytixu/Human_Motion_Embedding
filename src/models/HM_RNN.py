@@ -1,3 +1,5 @@
+# This is only for multimodal data
+
 import numpy as np
 
 import keras.layers as K_layer
@@ -7,8 +9,10 @@ import abs_model
 from embedding import pattern_matching, embedding_utils
 from format_data import formatter
 
-class HH_RNN(abs_model.AbstractModel):
+class HM_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
+		assert args['supervised']
+
 		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in'] # this is the number of frame we want to input for comparing against prediction baselines
 		self.unit_t = args['unit_timesteps']
@@ -23,39 +27,70 @@ class HH_RNN(abs_model.AbstractModel):
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
-		return super(HH_RNN, self).__init__(args)
+		# for different modalities
+		self.modality_dims = [args['data_dim'], len(args['actions'])]
+
+		return super(HM_RNN, self).__init__(args)
+
 
 	def make_model(self):
+		activation = 'tanh'
+
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
-		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
-		def encode_partials(seq):
+		# different encoders for different modalities
+		modal_encode = [None]*len(self.modality_dims)
+		for i,d in enumerate(self.modality_dims):
+			modal_encode[i] = abs_model.RNN_UNIT(self.latent_dim/2)
+		# global encoder for all the modalities together
+		global_encode = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
+
+		unit_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
+		global_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim))
+
+		def encode_partials(seq, seq_dim, encoder):
 			encoded = [None]*self.unit_n
 			for i in range(self.unit_n):
-				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.input_dim))(seq)
-				encoded[i] = encode_1(rs)
-			return encode_reshape(K_layer.concatenate(encoded, axis=1))
+				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, seq_dim))(seq)
+				encoded[i] = encoder(rs)
+			return unit_encode_reshape(K_layer.concatenate(encoded, axis=1))
 
-		encoded = encode_partials(reshaped)
-		encoded = encode_2(encoded)
+		def encoder_modalities(seq):
+			encoded = None
+			# assume 2 modalities for now
+			# TODO: fix this
+			idx = self.modalities
+			idx = [(0,idx[1]), (idx[1], self.timesteps)]
 
+			encoded = [None]*3
+			for i,k in enumerate(idx):
+				s,e = k
+				rs = K_layer.Lambda(lambda x: x[:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
+				encoded[i] = encode_partials(rs)
+
+			encoded[2] = K_layer.Activation(activation)(K_layer.add([encoded[0], encoded[1]]))
+			for i in range(3):
+				encoded[i] = global_encode(encoded[i])
+
+			return global_encode_reshape(K_layer.concatenate(encoded, axis=1))
+
+		encoded = encoder_modalities(reshaped)
+
+		# same as in HH_RNN
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
-		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=decoder_activation)
-		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
-		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=activation)
 
 		def decode_angle(e):
 			angle = decode_euler_2(decode_euler_1(e))
 			residual = decode_repete(e)
 			residual = decode_residual_2(decode_residual_1(residual))
-			angle = K_layer.Activation(decoder_activation)(K_layer.add([decode_repete(angle), residual]))
+			angle = K_layer.Activation(activation)(K_layer.add([decode_repete(angle), residual]))
 			return angle
 
 		angles = [None]*len(self.sup_hierarchies)
@@ -72,8 +107,9 @@ class HH_RNN(abs_model.AbstractModel):
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def __get_sup_index(self, i):
-		return (i+1)/self.unit_t-1
+	def __get_sup_index(self, m_t, m_s):
+		# TODO: finish this
+		return self.unit_t*m_s + (i+1)/self.unit_t-1
 
 	def load_embedding(self, data, **kwargs):
 		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
@@ -103,9 +139,9 @@ class HH_RNN(abs_model.AbstractModel):
 		return formatter.expand_modalities(self, x, **kwargs)
 
 	# override
-	def encode(self, x, modality=-1):
+	def encode(self, x, m_t=-1, m_s=-1):
 		z = self.encoder.predict(x)
-		if modality > 0:
+		if m_t > 0:
 			return z[:,self.__get_sup_index(modality)]
 
 	def predict(self, x, **kwargs):

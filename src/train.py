@@ -3,6 +3,7 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
+from models.format_data import formatter
 
 CV_SPLIT = 0.2
 LOSS = 1000
@@ -24,19 +25,29 @@ def __eval_loss(model, history, args):
 
 def __eval(model, x, y, args, stats):
 	'''
-	Compare results using l2 distance of the Euler angle.
+	Evaluate training error using l2 distance of the Euler angle.
 	'''
 	y_pred = model.autoencode(x)
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return utils.l2_error(y_pred, y)
 
 def __eval_pred(model, x, y, args, stats):
+	'''
+	Evalutate prediction error
+	'''
 	std = []
 	y_pred = model.predict(x, return_std=True)
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return std, utils.prediction_error(y_pred, y, stats)
+
+def __eval_class(model, x, y, args, stats):
+	'''
+	Evaluate classification error
+	'''
+	y_pred = model.classify(x, return_std=True)
+	return std, utils.classification_error(y_pred, y, stats)
 
 def __print_model(model):
 	model.model.summary()
@@ -55,6 +66,8 @@ def train(model, data_iter, test_iter, valid_data, args):
 	stats = args['input_data_stats']
 	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
 	norm_x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
+	if args['supervised']:
+		y_motion_only = formatter.without_name(model, y_valid)
 
 	iter = 1
 	for x in data_iter:
@@ -84,24 +97,31 @@ def train(model, data_iter, test_iter, valid_data, args):
 		x_test = utils.normalize(x_test, stats, args['normalization_method'])
 
 		# training error
-		mse = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
+		_train = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
 		# test error
-		mse_test = __eval(model, x_test, y_test, args, stats)
+		l2_test = __eval(model, x_test, y_test, args, stats)
 		# prediction error with validation data
-		std, mse_valid = __eval_pred(model, norm_x_valid, valid_data, args, stats)
-		mean_std, std_std = 0, 0
+		std, l2_valid = __eval_pred(model, norm_x_valid, y_valid, args, stats)
+		mean_std_pred, std_std_pred = 0, 0
 		if len(std) > 0:
-			mean_std, std_std = np.mean(std), np.std(std)
-			print 'MEAN STD, STD STD', mean_std, std_std
+			mean_std_pred, std_std_pred = np.mean(std), np.std(std)
+			print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
 
-		print 'MEAN TRAIN', np.mean(mse)
-		print 'MEAN TEST', np.mean(mse_test)
-		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(model, mse_valid)
+		# classification error with validation data
+		if args['supervised']:
+			std, log_valid = __eval_class(model, y_motion_only, y_valid, args, stats)
+			mean_std_class, std_std_class = np.mean(std), np.std(std)
+			print 'Classification: MEAN STD, STD STD', mean_std_class, std_std_class
+
+		print 'MEAN TRAIN', np.mean(l2_train)
+		print 'MEAN TEST', np.mean(l2_test)
+		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(model, l2_valid)
+		print 'CLASSIFICATION', np
 
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
 			 	spamwriter = csv.writer(f)
-			 	spamwriter.writerow([args['timesteps_in'], new_loss, mse, mse_test, mse_valid, mean_std, std_std])
+			 	spamwriter.writerow([args['timesteps_in'], new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred])
 
 
 if __name__ == '__main__':

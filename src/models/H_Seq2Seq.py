@@ -19,10 +19,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.unit_n = self.timesteps_in/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
-		self.latent_dim = args['latent_dim']
-		self.input_dim = args['input_data_stats']['data_dim']
-		self.output_dim = self.input_dim
-
 		return super(H_Seq2Seq, self).__init__(args)
 
 	def make_model(self):
@@ -75,3 +71,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		# Same as Seq2Seq
 		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
 		return x_pred
+
+	def classify(self, x, **kwargs):
+		# not supported
+		return None

@@ -1,4 +1,5 @@
 import numpy as np
+import formatter
 
 TIME_MODALITIES = 0
 OTHER_MODALITIES = 1
@@ -27,11 +28,21 @@ def parse_load_embedding(model, data, **kwargs):
 
 	# select relevant modalities
 	if 'modalities' in kwargs:
-		return OTHER_MODALITIES, kwargs['modalities']
-	else:
-		if 'pred_only' in kwargs and kwargs['pred_only']:
-			sets = [model.timesteps_in-1, model.timesteps-1]
-		return TIME_MODALITIES, model.hierarchies
+		# assume data is already key-ed by the modalities
+		return OTHER_MODALITIES, kwargs['modalities'], data
+
+	# load for classification task
+	elif 'class_only' in kwargs and kwargs['class_only']:
+		sets = formatter.EXPAND_NAMES_MODALITIES
+		data = formatter.expand_names(model, data)
+		return OTHER_MODALITIES, sets, data
+
+	# load for motion prediction task
+	elif 'pred_only' in kwargs and kwargs['pred_only']:
+		return TIME_MODALITIES, [model.timesteps_in-1, model.timesteps-1], data
+
+	# load all time-modalities
+	return TIME_MODALITIES, model.hierarchies, data
 
 
 def interpolate(z_a, z_b, l=8):

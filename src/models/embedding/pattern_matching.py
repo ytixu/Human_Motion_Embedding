@@ -138,9 +138,18 @@ def raw_match(x_ref, model, **kwargs):
 	'''
 	Do pattern matching for raw data z_ref.
 	WARNING except ADD, x_ref has 1 sample. TODO: change this later
+	Args
+		x_ref:
+		model:
+		kwargs:
+			partial_encode_idx: index for retrieving the partial sequence encoding
+								(only useful for H_RNN and HH_RNN)
+			... other params in match()
+	Return
+		same as match() but the matched pattern is decoded
 	'''
 	# encode
-	c = model.timesteps_in-1
+	c = kwargs['partial_encode_idx'] if 'partial_encode_idx' in kwargs else model.timesteps_in-1
 	z_ref = model.encode(x_ref, modality=c)
 	# match
 	z_matched = match(z_ref, model, **kwargs)
@@ -175,7 +184,7 @@ def batch_all_match(model, sample_zs, modalities):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
 			#TODO: remove this
-			#if dist_name in ['l2','cos']: continue 
+			#if dist_name in ['l2','cos']: continue
 
 			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)
 			kwargs['dist_method'] = dist

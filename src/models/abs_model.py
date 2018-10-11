@@ -78,6 +78,15 @@ class AbstractModel:
 	@abstractmethod
 	def predict(self, x, **kwargs):
 		'''
-		Motion prediction
+		Default motion prediction algorithm
+		Input motion sequence and predict the rest
+		'''
+		pass
+
+	@abstractmethod
+	def classify(self, x, **kwargs):
+		'''
+		Default motion classification algorithm
+		Input motion sequence and infer the action name
 		'''
 		pass

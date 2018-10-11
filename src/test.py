@@ -14,11 +14,10 @@ from models.embedding import viz_embedding, pattern_matching, embedding_utils
 from models.format_data import formatter
 import viz_poses
 
-def __load_embeddding(model, data_iter, format_func, args, **kwargs):
+def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
 	for x in data_iter:
 		x = utils.normalize(x, stats, args['normalization_method'])
-		x, _ = format_func(x)
 		model.load_embedding(x, **kwargs)
 		if args['random_embedding']:
 			break # this gives a random sample of the embedding with the data_iter size
@@ -191,7 +190,7 @@ if __name__ == '__main__':
 
 	print 'Load embedding ...'
 	data_iter, data_iter_ = tee(data_iter)
-	__load_embeddding(model, data_iter_, model.format_data, args)
+	__load_embeddding(model, data_iter_, args)
 
 	print 'Computing PCA ...'
 	args['output_dir'] = output_dir + '_PCA'
@@ -223,9 +222,9 @@ if __name__ == '__main__':
 		__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
 
 		# load different embedding
-		data_iter, data_iter_ = tee(data_iter)
-		kwargs = {'modalities': formatter.EXPAND_NAMES_MODALITIES}
-		__load_embeddding(model, data_iter_, lambda x: formatter.expand_names(model, x), args, **kwargs)
+		# data_iter, data_iter_ = tee(data_iter)
+		kwargs = {'class_only': True}
+		__load_embeddding(model, data_iter, args, **kwargs)
 
 		print 'Compare pattern matching methods for classification'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification)'

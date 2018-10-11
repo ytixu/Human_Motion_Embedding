@@ -43,7 +43,7 @@ class VL_RNN(abs_model.AbstractModel):
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
 	def load_embedding(self, data, **kwargs):
-		m, set = embedding_utils.parse_load_embedding(self, data, **kwargs)
+		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
 
 		if m == embedding_utils.TIME_MODALITIES:
 			#reformat data to be key-ed by the modality
@@ -53,7 +53,7 @@ class VL_RNN(abs_model.AbstractModel):
 			data = {h:data[i] for i,h in enumerate(self.hierarchies)}
 
 		# populate
-		for i in set:
+		for i in sets:
 			zs = self.encoder.predict(data[i])
 			if i not in self.embedding:
 				self.embedding[i] = zs
@@ -70,12 +70,27 @@ class VL_RNN(abs_model.AbstractModel):
 			x = formatter.randomize_name(self, x)
 		return formatter.expand_time_vl(self, x)
 
+	# override
+	def encode(self, x, modality=-1):
+		return self.encoder.predict(x)
+
 	def predict(self, x, **kwargs):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
+
+		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)
 
-	# override
-	def encode(self, x, modality=-1):
-		return self.encoder.predict(x)
+	def classify(self, x, **kwargs):
+		# assume data is alrady formatted
+		# and embedding is loaded
+		assert self.embedding != None
+
+		# from motion modality to motion+name modality
+		kwargs['partial_encode_idx'] = model.timesteps-1
+		kwargs['modality_partial'] = 'motion'
+		kwargs['modality_complete'] = 'both'
+
+		# default using ADD method for pattern matching
+		return pattern_matching.raw_match(x, self, **kwargs)

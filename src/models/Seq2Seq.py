@@ -40,3 +40,7 @@ class Seq2Seq(abs_model.AbstractModel):
 	def predict(self, x, **kwargs):
 		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
 		return x_pred
+
+	def classify(self, x, **kwargs):
+		# not supported
+		return None

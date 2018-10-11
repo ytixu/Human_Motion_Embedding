@@ -17,10 +17,6 @@ class H_RNN(abs_model.AbstractModel):
 		assert(self.timesteps_in-1 in self.hierarchies)
 		assert(self.timesteps-1 in self.hierarchies)
 
-		self.latent_dim = args['latent_dim']
-		self.input_dim = args['input_data_stats']['data_dim']
-		self.output_dim = self.input_dim
-
 		return super(H_RNN, self).__init__(args)
 
 	def make_model(self):
@@ -47,17 +43,17 @@ class H_RNN(abs_model.AbstractModel):
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
 	def load_embedding(self, data, **kwargs):
-		m, set = embedding_utils.parse_load_embedding(self, data, **kwargs)
+		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
 
 		if m == embedding_utils.TIME_MODALITIES:
 			zs = self.encoder.predict(data)
-			for i in set:
+			for i in sets:
 				if i not in self.embedding:
 					self.embedding[i] = zs[:,i]
 				else:
 					self.embedding[i] = np.concatenate([self.embedding[i], zs[:,i]])
 		else:
-			for i in set:
+			for i in sets:
 				zs = self.encoder.predict(data[i])
                                 if i not in self.embedding:
                                         self.embedding[i] = zs[:,-1]
@@ -83,4 +79,17 @@ class H_RNN(abs_model.AbstractModel):
 		# and embedding is loaded
 		assert self.embedding != None
 
+		return pattern_matching.raw_match(x, self, **kwargs)
+
+	def classify(self, x, **kwargs):
+		# assume data is alrady formatted
+		# and embedding is loaded
+		assert self.embedding != None
+
+		# from motion modality to motion+name modality
+		kwargs['partial_encode_idx'] = model.timesteps-1
+		kwargs['modality_partial'] = 'motion'
+		kwargs['modality_complete'] = 'both'
+
+		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)
