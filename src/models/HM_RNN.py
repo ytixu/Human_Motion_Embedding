@@ -123,7 +123,7 @@ class HM_RNN(abs_model.AbstractModel):
 
 	def __get_sup_s_idx(self, m_s):
 		m_s = self.signal_types.index(m_s)
-		return [self.unit_n*m_s + i for i in range(self.unit_t)]
+		return [self.unit_n*m_s + i for i in range(self.unit_n)]
 
 	def load_embedding(self, data, **kwargs):
 		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)

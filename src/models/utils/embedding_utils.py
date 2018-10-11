@@ -34,7 +34,7 @@ def parse_load_embedding(model, data, **kwargs):
 	# load for classification task
 	elif 'class_only' in kwargs and kwargs['class_only']:
 		sets = formatter.EXPAND_NAMES_MODALITIES
-		data = formatter.expand_names(model, data)
+		data,_ = formatter.expand_names(model, data)
 		return OTHER_MODALITIES, sets, data
 
 	# load for motion prediction task

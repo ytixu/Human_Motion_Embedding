@@ -46,7 +46,7 @@ def __eval_class(model, x, y, args, stats):
 	'''
 	Evaluate classification error
 	'''
-	y_pred = model.classify(x, return_std=True)
+	std, y_pred = model.classify(x, return_std=True)
 	return std, utils.classification_error(y_pred, y, stats)
 
 def __print_model(model):
@@ -97,7 +97,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		x_test = utils.normalize(x_test, stats, args['normalization_method'])
 
 		# training error
-		_train = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
+		l2_train = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
 		# test error
 		l2_test = __eval(model, x_test, y_test, args, stats)
 		# prediction error with validation data
@@ -118,12 +118,15 @@ def train(model, data_iter, test_iter, valid_data, args):
 		print 'MEAN TRAIN', np.mean(l2_train)
 		print 'MEAN TEST', np.mean(l2_test)
 		print 'SHORT-TERM (80-160-320-400ms)', utils.list_short_term(model, l2_valid)
-		print 'CLASSIFICATION', np
+		print 'CLASSIFICATION', np.array(log_valid)[range(1,model.timesteps,2)]
 
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
 			 	spamwriter = csv.writer(f)
-			 	spamwriter.writerow([args['timesteps_in'], new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred])
+				if ['supervised']:
+					spamwriter.writerow([args['timesteps_in'], new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred, log_valid, mean_std_class, std_std_class])
+				else:
+				 	spamwriter.writerow([args['timesteps_in'], new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred])
 
 
 if __name__ == '__main__':
