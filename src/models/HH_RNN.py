@@ -99,7 +99,7 @@ class HH_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as H_RNN
 		'''
-		return formatter.expand_modalities(self, x, **kwargs)
+		return formatter.format_h_rnn(self, x, **kwargs)
 
 	# override
 	def encode(self, x, modality=-1):
@@ -113,7 +113,7 @@ class HH_RNN(abs_model.AbstractModel):
 		# and embedding is loaded
 		assert self.embedding != None
 
-		return pattern_matching.raw_match(x, self, **kwargs)
+		return pattern_matching.raw_match(x, self, **kwargs)[:,self.timesteps_in:]
 
 	def classify(self, x, **kwargs):
 		# assume data is alrady formatted
@@ -126,4 +126,4 @@ class HH_RNN(abs_model.AbstractModel):
 		kwargs['modality_complete'] = 'both'
 
 		# default using ADD method for pattern matching
-		return pattern_matching.raw_match(x, self, **kwargs)
+		return pattern_matching.raw_match(x, self, **kwargs)[:,:,-self.name_dim:]

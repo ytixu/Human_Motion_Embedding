@@ -73,13 +73,23 @@ def expand_names(model, x):
 	}
 	return new_x, new_x
 
-def expand_modalities(model, x, **kwargs):
-	if 'for_validation' in kwargs and kwargs['for_validation']:
-		# remove the ground truth that we are trying to predict
+def format_h_rnn(model, x, **kwargs):
+	if 'for_prediction' in kwargs and kwargs['for_prediction']:
+		# remove the ground truth from input
 		x_condition = np.copy(x)
 		x_condition[:,model.timesteps_in:] = 0
+		# ground truth is the motion after model.timesteps_in
+		y = np.copy(x[:,model.timesteps_in:])
 
-		return x_condition, x
+		return x_condition, y
+
+	if 'for_classification' in kwargs and kwargs['for_classification']:
+		# remove the name from input
+		x_condition = without_name(model, x)
+		# ground truth the motion name
+		y = np.copy(x[:,:,-model.name_dim:])
+
+		return x_condition, y
 
 	random_name = False if 'expand_all_names' in kwargs and kwargs['expand_all_names'] else True
 

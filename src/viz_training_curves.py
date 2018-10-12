@@ -23,7 +23,7 @@ import os.path
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils import SHORT_TERM_IDX
+from utils.utils import SHORT_TERM_IDX
 
 LABELS = [['train','test'],
 			['valid-80', 'valid-160', 'valid-320', 'valid-400'],
@@ -32,16 +32,16 @@ COLORS = ['b','r','g','k']
 LINESTYLES = ['-', '--', ':']
 
 def __to_numb_array(row):
-	a = row.replace('\n', '').strip('[').strip(']').split()
+	a = row.replace('\n', '').replace(',', ' ').strip('[').strip(']').split()
 	a = [i for i in a if i != '']
 	return np.array(map(float, a))
 
 def __get_data(row):
-	train = np.mean(__to_numb_array(row[1]))
-	test = np.mean(__to_numb_array(row[2]))
-	valid = __to_numb_array(row[3])[SHORT_TERM_IDX] # TODO: fix this
-	std_mean = float(row[4])
-	std_std = float(row[5])
+	train = np.mean(__to_numb_array(row[2]))
+	test = np.mean(__to_numb_array(row[3]))
+	valid = __to_numb_array(row[7])[[i+int(row[0]) for i in SHORT_TERM_IDX]] # TODO: fix this
+	std_mean = float(row[8])
+	std_std = float(row[9])
 	return [train, test], valid, [std_mean, std_std]
 
 def __format_performance(line):

@@ -114,10 +114,6 @@ def classification_error(y_pred, y_true, stats):
 
 	return [sckit_log_loss(y_true[:,i], relu_y_pred[:,i]) for i in range(y_true.shape[1])]
 
-def list_short_term(model, error):
-	idx = [model.timesteps_in + i for i in SHORT_TERM_IDX]
-	return error[idx]
-
 # pretty print scores
 def print_score(scores, title, keys, print_title=True, precision='.2'):
 	# borrowed from

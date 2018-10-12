@@ -152,7 +152,7 @@ class HM_RNN(abs_model.AbstractModel):
 		Same as H_RNN
 		'''
 		kwargs['expand_all_names'] = True
-		return formatter.expand_modalities(self, x, **kwargs)
+		return formatter.format_h_rnn(self, x, **kwargs)
 
 	# override
 	def encode(self, x, modality=(-1,'')):

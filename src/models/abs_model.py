@@ -71,7 +71,8 @@ class AbstractModel:
 	@abstractmethod
 	def format_data(self, x, **kwargs):
 		'''
-		Format the data to match the input and output of the model.
+		Format the data to match the input and output of the model,
+		according the task (prediction, classification)
 		'''
 		pass
 
@@ -79,7 +80,8 @@ class AbstractModel:
 	def predict(self, x, **kwargs):
 		'''
 		Default motion prediction algorithm
-		Input motion sequence and predict the rest
+		Given formatted x_1:t for prediction,
+		Output x_t+1:T
 		'''
 		pass
 
@@ -87,6 +89,7 @@ class AbstractModel:
 	def classify(self, x, **kwargs):
 		'''
 		Default motion classification algorithm
-		Input motion sequence and infer the action name
+		Given formatted x_1:T for classification,
+		Output the action name l_1:T
 		'''
 		pass

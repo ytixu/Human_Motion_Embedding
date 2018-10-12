@@ -65,7 +65,7 @@ class H_RNN(abs_model.AbstractModel):
 		Reformat the output data for computing the autoencoding error
 		Same as HH_RNN
 		'''
-		return formatter.expand_modalities(self, x, **kwargs)
+		return formatter.format_h_rnn(self, x, **kwargs)
 
 	# overrides
 	def encode(self, x, modality=-1):

@@ -55,11 +55,11 @@ def __print_scores(scores, supervised):
 		print 'z', np.mean([scores[mode][a]['z'] for a in actions])
 		print ''
 
-def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
+def __compare_pattern_matching(part_data, comp_data, model, modalities, args):
 	partial_key, complete_key, partial_x_idx, complete_y_idx = modalities
 
 	# encode input
-	z_ref = model.encode(x_valid_norm, modality=partial_x_idx)
+	z_ref = model.encode(part_data, modality=partial_x_idx)
 
 	# get matches
 	z_pred = {}
@@ -71,8 +71,8 @@ def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
 	# evaluation
 	N = 8 # 8 samples per action
 	stats = args['input_data_stats']
-	y_valid_norm = utils.normalize(y_valid, stats, args['normalization_method'])
-	z_gt = model.encode(y_valid, modality=complete_y_idx)
+	cpl_data_norm = utils.normalize(cpl_data, stats, args['normalization_method'])
+	z_gt = model.encode(cpl_data, modality=complete_y_idx)
 	scores = {}
 	pred_n = complete_y_idx - partial_x_idx
 	if pred_n == 0:
@@ -90,19 +90,19 @@ def __compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args):
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
 				'y': (utils.prediction_error(y_pred[s:e],
-						y_valid[s:e], stats)[-pred_n:]).tolist()  # compare motion
+						cpl_data[s:e], stats)[-pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
 			if args['supervised']:
 				scores[mode][action]['name'] = utils.classification_error(
-					y_pred[s:e], y_valid[s:e], stats)[-pred_n:]
+					y_pred[s:e], cpl_data[s:e], stats)[-pred_n:]
 
 	modes = sorted(z_pred.keys())
 	print modes
 	for mode in z_pred:
 		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
 		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
-	z_pred['y_gt'] = y_valid[:,-pred_n:].tolist()
+	z_pred['y_gt'] = cpl_data[:,-pred_n:].tolist()
 
 	# print score
 	__print_scores(scores, args['supervised'])
@@ -200,25 +200,23 @@ if __name__ == '__main__':
 	__interpolate(model, stats, args)
 
 	print 'Comparing pattern matching methods for prediction'
-	x_valid, y_valid = model.format_data(valid_data, for_validation=True)
-	# x_valid has model.timesteps_in frames
-	# y_valid has model.timesteps frames
-
-	x_valid_norm = utils.normalize(x_valid, stats, args['normalization_method'])
+	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
+	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
-	__compare_pattern_matching(x_valid_norm, y_valid, model, modalities, args)
+	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 
 	if args['supervised']:
 		# format validation data
-		x_valid_no_name = formatter.without_name(model, x_valid_norm)
-		y_valid_norm = utils.normalize(y_valid, stats, args['normalization_method'])
-		y_valid_no_name = formatter.without_name(model, y_valid_norm)
+		xc_valid,_ = model.format_data(valid_data, for_classification=True)
+		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])
+		xp_valid_unamed,_ = model.format_data(xc_valid, for_prediction=True)
+		names_valid = formatter.without_motion(model, valid_data)
 
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
-		__compare_pattern_matching(x_valid_no_name, y_valid, model, modalities, args)
+		__compare_pattern_matching(xp_valid_unamed, valid_data, model, modalities, args)
 
 		# load different embedding
 		# data_iter, data_iter_ = tee(data_iter)
@@ -228,11 +226,11 @@ if __name__ == '__main__':
 		print 'Compare pattern matching methods for classification'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification)'
 		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		__compare_pattern_matching(xc_valid, names_valid, model, modalities, args)
 
 		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(y_valid_no_name, y_valid, model, modalities, args)
+		__compare_pattern_matching(xc_valid, data_valid, model, modalities, args)
 
 		print 'Compare pattern matchin methods for generation'
 		args['output_dir'] = output_dir + '_pattern_matching_(generation)'
