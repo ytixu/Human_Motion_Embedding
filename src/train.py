@@ -39,6 +39,7 @@ def __eval_pred(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+	print y_pred.shape, y.shape
 	return std, utils.prediction_error(y_pred, y, stats)
 
 def __eval_class(model, x, y, args, stats):
@@ -64,7 +65,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 	'''
 	stats = args['input_data_stats']
 	xp_valid, yp_valid = model.format_data(valid_data, for_prediction=True)
-	xp_valid = utils.normalize(x_valid, stats, args['normalization_method'])
+	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
 	if args['supervised']:
 		xc_valid, yc_valid = model.format_data(valid_data, for_classification=True)
 		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])

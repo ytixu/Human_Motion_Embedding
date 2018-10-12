@@ -63,6 +63,7 @@ class VL_RNN(abs_model.AbstractModel):
 		'''
 		Reformat the data so that we can encode sequences of different lengths.
 		'''
+		# TODO: fix this
 		if 'for_validation' in kwargs and kwargs['for_validation']:
 			return x, x
 		if self.supervised:

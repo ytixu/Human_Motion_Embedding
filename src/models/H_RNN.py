@@ -79,6 +79,7 @@ class H_RNN(abs_model.AbstractModel):
 		# and embedding is loaded
 		assert self.embedding != None
 
+		kwargs['return_seq_fn'] = lambda x: x[:,self.timesteps_in:]
 		return pattern_matching.raw_match(x, self, **kwargs)
 
 	def classify(self, x, **kwargs):
@@ -90,6 +91,7 @@ class H_RNN(abs_model.AbstractModel):
 		kwargs['partial_encode_idx'] = model.timesteps-1
 		kwargs['modality_partial'] = 'motion'
 		kwargs['modality_complete'] = 'both'
+		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)

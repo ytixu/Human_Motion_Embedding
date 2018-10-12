@@ -69,8 +69,7 @@ class H_Seq2Seq(abs_model.AbstractModel):
 
 	def predict(self, x, **kwargs):
 		# Same as Seq2Seq
-		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
-		return x_pred
+		return self.model.predict(x)
 
 	def classify(self, x, **kwargs):
 		# not supported

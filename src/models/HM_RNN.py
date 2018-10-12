@@ -61,7 +61,7 @@ class HM_RNN(abs_model.AbstractModel):
 		def encoder_modalities(seq):
 			encoded = None
 			# assume 2 modalities for now
-			# TODO: fix this
+			# TODO: fix this, not hard-code it
 			idx = self.signal_dim
 			idx = [(0,idx[0]), (idx[0], self.input_dim)]
 
@@ -71,7 +71,7 @@ class HM_RNN(abs_model.AbstractModel):
 				rs = K_layer.Lambda(lambda x: x[:,:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
 				encoded[i] = encode_partials(rs, self.signal_dim[i], modal_encode[i])
 
-			encoded[2] = K_layer.Activation(activation)(K_layer.add([encoded[0], encoded[1]]))
+			encoded[2] = K_layer.add([encoded[0], encoded[1]])
 			for i in range(self.signal_n):
 				encoded[i] = global_encode(encoded[i])
 
@@ -166,9 +166,9 @@ class HM_RNN(abs_model.AbstractModel):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
-
 		if 'partial_encode_idx' not in kwargs:
 			kwargs['partial_encode_idx'] = (self.timesteps_in-1, 'both')
+		kwargs['return_seq_fn'] = lambda x: x[:,self.timesteps_in:]
 
 		return pattern_matching.raw_match(x, self, **kwargs)
 
@@ -176,12 +176,12 @@ class HM_RNN(abs_model.AbstractModel):
 		# assume data is alrady formatted
 		# and embedding is loaded
 		assert self.embedding != None
-		print self.embedding.keys()
 
 		# from motion modality to motion+name modality
 		kwargs['partial_encode_idx'] = (self.timesteps-1, 'motion')
 		kwargs['modality_partial'] = self.embedding['motion']
 		kwargs['modality_complete'] = self.embedding['both']
+		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)
