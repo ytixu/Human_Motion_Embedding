@@ -142,12 +142,14 @@ def raw_match(x_ref, model, **kwargs):
 		x_ref:
 		model:
 		kwargs:
-			partial_encode_idx: index for retrieving the partial sequence encoding
-								(only useful for H_RNN and HH_RNN)
+			partial_encode_idx=model.timesteps_in-1: index for retrieving the partial sequence encoding
+				(only useful for H_RNN and HH_RNN)
+			return_seq_fn=identity: extract the relevant pattern as output
 			... other params in match()
 	Return
 		same as match() but the matched pattern is decoded
 	'''
+	fn = kwargs['return_seq_fn'] if 'return_seq_fn' in kwargs else lambda x:x
 	# encode
 	c = kwargs['partial_encode_idx'] if 'partial_encode_idx' in kwargs else model.timesteps_in-1
 	z_ref = model.encode(x_ref, modality=c)
@@ -156,8 +158,8 @@ def raw_match(x_ref, model, **kwargs):
 	# decode
 	if 'return_std' in kwargs and kwargs['return_std']:
 		std, z_matched = z_matched
-		return std, model.decode(z_matched)
-	return model.decode(z_matched)
+		return std, fn(model.decode(z_matched))
+	return fn(model.decode(z_matched))
 
 def batch_all_match(model, sample_zs, modalities):
 	'''

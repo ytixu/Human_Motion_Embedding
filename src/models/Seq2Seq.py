@@ -38,8 +38,7 @@ class Seq2Seq(abs_model.AbstractModel):
 		return x[:,:self.timesteps_in], x[:,self.timesteps_in:]
 
 	def predict(self, x, **kwargs):
-		x_pred = np.concatenate([x,self.model.predict(x)], axis=1)
-		return x_pred
+		return self.model.predict(x)
 
 	def classify(self, x, **kwargs):
 		# not supported
