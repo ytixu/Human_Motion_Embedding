@@ -75,8 +75,8 @@ def __data_generator_random(data_dir, stats, args, b):
 	x = np.zeros((b,t,stats['data_dim']+l))
 
 	for i in range(args['iterations']):
-		sample_idx = [:b]
-		#np.random.choice(sample_n, b/conseq_n)
+		sample_idx = np.random.choice(len(sample_loop)-b, 1)
+		sample_idx = sample_loop[sample_idx: sample_idx+b]
 
 		for j,sample_i in enumerate(sample_idx):
 			sub_data, action_name = data[sample_i]
