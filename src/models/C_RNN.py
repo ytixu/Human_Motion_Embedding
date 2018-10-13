@@ -10,18 +10,23 @@ class C_RNN(abs_model.AbstractModel):
 		assert args['supervised']
 
 		self.timesteps = args['timesteps']
-		return super(Seq2Seq, self).__init__(args)
-		self.input_dim = args['data_dim']
-		self.output_dim = args['data_dim']
+		return super(C_RNN, self).__init__(args)
 
 	def make_model(self):
+		self.input_dim = self.input_dim - self.name_dim
+                self.output_dim = self.name_dim
+
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
-		output = abs_model.RNN_UNIT(self.latent_dim, activation="softmax")(inputs)
+		encoded = abs_model.RNN_UNIT(self.latent_dim, activation='tanh', return_sequences=True)(inputs)
+		decoded = abs_model.RNN_UNIT(self.output_dim, activation='tanh')(encoded)
+		output = K_layer.RepeatVector(self.timesteps)(decoded)
 
 		self.model = Model(inputs, output)
+		self.encoder = self.model
+		self.decoder = self.model
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def load_embedding(self, data, pred_only=False, new=False):
+	def load_embedding(self, data, **kwargs):
 		# no embedding
 		pass
 

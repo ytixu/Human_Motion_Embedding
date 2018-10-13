@@ -30,7 +30,7 @@ class Seq2Seq(abs_model.AbstractModel):
 
 		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
-	def load_embedding(self, data, pred_only=False, new=False):
+	def load_embedding(self, data, **kwargs):
 		# no embedding
 		pass
 
