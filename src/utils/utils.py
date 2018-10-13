@@ -101,7 +101,6 @@ def classification_error(y_pred, y_true, stats):
 	if y_pred.shape[-1] > stats['data_dim']:
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
-	print y_pred[0][0], y_true[0][0]
 	y_pred = y_pred * (y_pred > 0)
 	return [sckit_log_loss(y_true[0], y_pred[0]) for i in range(y_true.shape[0])]
 

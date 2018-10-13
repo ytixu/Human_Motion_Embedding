@@ -69,12 +69,13 @@ def __data_generator_random(data_dir, stats, args, b):
 		data[i] = (np.load(f)[:,stats['dim_to_use']], __get_action_from_file(f))
 		sample_n += 1
 
+	sample_loop = np.array([range(sample_n)]*(b/conseq_n/sample_n+1)).flatten()
 	conseq_n = 1
 	l = __name_dim(args)
 	x = np.zeros((b,t,stats['data_dim']+l))
 
 	for i in range(args['iterations']):
-		sample_idx = np.array([range(sample_n)]*(b/conseq_n/sample_n+1)).flatten()[:b]
+		sample_idx = [:b]
 		#np.random.choice(sample_n, b/conseq_n)
 
 		for j,sample_i in enumerate(sample_idx):
