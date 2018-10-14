@@ -122,9 +122,9 @@ class HH_RNN(abs_model.AbstractModel):
 		assert self.embedding != None
 
 		# from motion modality to motion+name modality
-		kwargs['partial_encode_idx'] = model.timesteps-1
-		kwargs['modality_partial'] = 'motion'
-		kwargs['modality_complete'] = 'both'
+		kwargs['partial_encode_idx'] = self.timesteps-1
+		kwargs['modality_partial'] = self.embedding['motion']
+		kwargs['modality_complete'] = self.embedding['both']
 		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
