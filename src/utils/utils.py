@@ -128,7 +128,6 @@ def print_score(scores, title, keys, print_title=True, precision='.2'):
 
 def print_classification_score(score, actions, precision='.2'):
 	N = 8
-	print len(score)
 	for action, i in actions.iteritems():
 		s,e = i*N,(i+1)*N
 		print action, np.mean(score[s:e])
