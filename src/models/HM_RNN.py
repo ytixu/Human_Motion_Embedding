@@ -70,10 +70,11 @@ class HM_RNN(abs_model.AbstractModel):
 				s,e = k
 				rs = K_layer.Lambda(lambda x: x[:,:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
 				encoded[i] = encode_partials(rs, self.signal_dim[i], modal_encode[i])
+				encoded[i] = global_encode(encoded[i])
 
 			encoded[2] = K_layer.add([encoded[0], encoded[1]])
-			for i in range(self.signal_n):
-				encoded[i] = global_encode(encoded[i])
+			# for i in range(self.signal_n):
+			# 	encoded[i] = global_encode(encoded[i])
 
 			return global_encode_reshape(K_layer.concatenate(encoded, axis=1))
 
