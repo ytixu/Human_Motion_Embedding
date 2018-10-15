@@ -2,6 +2,7 @@ import numpy as np
 
 import keras.layers as K_layer
 from keras.models import Model
+from keras import backend as K
 
 import abs_model
 
@@ -18,7 +19,8 @@ class C_RNN(abs_model.AbstractModel):
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		encoded = abs_model.RNN_UNIT(self.latent_dim, activation='tanh', return_sequences=True)(inputs)
-		decoded = abs_model.RNN_UNIT(self.output_dim, activation='tanh')(encoded)
+		decoded = abs_model.RNN_UNIT(self.output_dim)(encoded)
+		decoded = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))(decoded)
 		output = K_layer.RepeatVector(self.timesteps)(decoded)
 
 		self.model = Model(inputs, output)

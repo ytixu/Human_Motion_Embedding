@@ -102,7 +102,7 @@ def classification_error(y_pred, y_true, stats):
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
 	y_pred = y_pred * (y_pred > 0)
-	return [sckit_log_loss(y_true[0], y_pred[0]) for i in range(y_true.shape[0])]
+	return [sckit_log_loss(y_true[i], y_pred[i]) for i in range(y_true.shape[0])]
 
 # pretty print scores
 def print_score(scores, title, keys, print_title=True, precision='.2'):

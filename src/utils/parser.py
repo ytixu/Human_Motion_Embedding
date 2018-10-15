@@ -75,6 +75,7 @@ def __data_generator_random(data_dir, stats, args, b):
 	x = np.zeros((b,t,stats['data_dim']+l))
 
 	for i in range(args['iterations']):
+		x[:,:,:] = 0
 		sample_idx = np.random.choice(len(sample_loop)-b, 1)[0]
 		sample_idx = sample_loop[sample_idx: sample_idx+b]
 
@@ -89,6 +90,7 @@ def __data_generator_random(data_dir, stats, args, b):
 
 			if args['supervised']:
 				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][action_name]] = 1
+
 		yield x
 
 def __load_validation_data(data_dir, stats, args):
@@ -197,7 +199,7 @@ def get_parse(mode):
 	args = vars(ap.parse_args())
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
-	assert args['timesteps']  > 0
+	assert args['timesteps_in']  > 0
 	args['optimizer'] = 'optimizers.'+args['optimizer']
 
 	# load some statistics and other information about the data
@@ -229,13 +231,15 @@ def get_parse(mode):
 			if args['log_path'] is None:
 				args['log_path'] = __get_model_path_name(args, 'log')
 
-		if args['model'] == 'C_RNN':
+		if args['method_name'] == 'C_RNN':
 			args['do_classification'] = True
 			args['do_prediction'] = False
 		else:
-			args['do_prediction'] = False
-			if args['supervised'] and args['model'] in ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN']:
-				args['do_classification'] =
+			args['do_prediction'] = True
+			if args['supervised'] and args['method_name'] in ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN']:
+				args['do_classification'] = True
+			else:
+				args['do_classification'] = False
 
 		# TODO: add output_data
 		return (args,
