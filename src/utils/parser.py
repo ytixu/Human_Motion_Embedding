@@ -229,6 +229,14 @@ def get_parse(mode):
 			if args['log_path'] is None:
 				args['log_path'] = __get_model_path_name(args, 'log')
 
+		if args['model'] == 'C_RNN':
+			args['do_classification'] = True
+			args['do_prediction'] = False
+		else:
+			args['do_prediction'] = False
+			if args['supervised'] and args['model'] in ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN']:
+				args['do_classification'] =
+
 		# TODO: add output_data
 		return (args,
 			__data_generator_random(args['input_data']+'/train/',

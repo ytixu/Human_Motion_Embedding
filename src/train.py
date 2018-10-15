@@ -102,27 +102,26 @@ def train(model, data_iter, test_iter, valid_data, args):
 		# test error
 		l2_test = __eval(model, x_test, y_test, args, stats)
 
+		print 'MEAN TRAIN', l2_train
+		print 'MEAN TEST', l2_test
+
 		# prediction error with validation data
-		std, l2_valid = __eval_pred(model, xp_valid, yp_valid, args, stats)
-		mean_std_pred, std_std_pred = 0, 0
-		if len(std) > 0:
-			mean_std_pred, std_std_pred = np.mean(std), np.std(std)
-			print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
+		if args['do_prediction']:
+			std, l2_valid = __eval_pred(model, xp_valid, yp_valid, args, stats)
+			mean_std_pred, std_std_pred = 0, 0
+			if len(std) > 0:
+				mean_std_pred, std_std_pred = np.mean(std), np.std(std)
+				print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
+			print 'SHORT-TERM (80-160-320-400ms)', l2_valid[utils.SHORT_TERM_IDX]
 
 		# classification error with validation data
-		if args['supervised']:
+		if args['do_classification']:
 			# TODO: need to fix this for randomly expanded names
 			print yc_valid.shape
 			model.load_embedding(norm_x[rand_idx], class_only=True, new=True)
 			std, log_valid = __eval_class(model, xc_valid, yc_valid, args, stats)
 			mean_std_class, std_std_class = np.mean(std), np.std(std)
 			print 'Classification: MEAN STD, STD STD', mean_std_class, std_std_class
-
-		print 'MEAN TRAIN', l2_train
-		print 'MEAN TEST', l2_test
-		print 'SHORT-TERM (80-160-320-400ms)', l2_valid[utils.SHORT_TERM_IDX]
-		if args['supervised']:
-			print 'CLASSIFICATION'
 			utils.print_classification_score(log_valid, args['actions'])
 
 		if SAVE_TO_DISK:
