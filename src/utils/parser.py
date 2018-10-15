@@ -70,14 +70,11 @@ def __data_generator_random(data_dir, stats, args, b):
 		sample_n += 1
 
 	conseq_n = 1
-	sample_loop = np.array([range(sample_n)]*(b/conseq_n/sample_n+1)).flatten()
 	l = __name_dim(args)
 	x = np.zeros((b,t,stats['data_dim']+l))
 
 	for i in range(args['iterations']):
-		x[:,:,:] = 0
-		sample_idx = np.random.choice(len(sample_loop)-b, 1)[0]
-		sample_idx = sample_loop[sample_idx: sample_idx+b]
+		sample_idx = np.random.choice(sample_n, b/conseq_n)
 
 		for j,sample_i in enumerate(sample_idx):
 			sub_data, action_name = data[sample_i]
@@ -89,7 +86,9 @@ def __data_generator_random(data_dir, stats, args, b):
 				x[j*conseq_n+k,:,:d] = sub_data[rand_idx+k:rand_idx+k+t]
 
 			if args['supervised']:
-				x[j*conseq_n:(j+1)*conseq_n,:,-l+args['actions'][action_name]] = 1
+				s, e = j*conseq_n, (j+1)*conseq_n
+				x[s:e,:,-l:] = 0
+				x[s:e,:,-l+args['actions'][action_name]] = 1
 
 		yield x
 
