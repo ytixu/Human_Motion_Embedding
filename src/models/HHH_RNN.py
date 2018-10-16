@@ -23,7 +23,7 @@ class HHH_RNN(abs_model.AbstractModel):
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
-		self.partial_latent_dim = args['latent_dim']/self.unit_n
+		self.partial_latent_dim = args['latent_dim']/2
 
 		return super(HHH_RNN, self).__init__(args)
 
@@ -49,10 +49,13 @@ class HHH_RNN(abs_model.AbstractModel):
 		decode_repete_partial = K_layer.RepeatVector(self.unit_n)
 		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=decoder_activation)
 
-		decode_euler = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler_1 = K_layer.Dense(self.output_dim*2, activation=decoder_activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
 
-		decode_residual = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
-		decode_all = K_layer.Bidirectional(abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation), merge_mode='sum')
+		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*2, return_sequences=True, activation=decoder_activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+
+		#decode_all = K_layer.Bidirectional(abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation), merge_mode='sum')
 
 		def decode_angle(e):
 			partials = decode_partial(decode_repete_partial(e))
@@ -60,7 +63,7 @@ class HHH_RNN(abs_model.AbstractModel):
 			angles = [None]*self.unit_n
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
-				angles[i] = decode_euler(e)
+				angles[i] = decode_euler_2(decode_euler_1(e))
 			angles = K_layer.concatenate(angles, axis=1)
 			angles = K_layer.Reshape((self.unit_n, self.output_dim))(angles)
 			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
@@ -68,7 +71,7 @@ class HHH_RNN(abs_model.AbstractModel):
 
 			residual = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
 							output_shape=(self.timesteps, self.partial_latent_dim))(partials)
-			residual = decode_all(residual)
+			residual = decode_residual_2(decode_residual_1(residual))
 
 			angles = K_layer.add([angles, residual])
 			#angles = decode_all(angles)
@@ -146,4 +149,4 @@ class HHH_RNN(abs_model.AbstractModel):
 		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
-		return pattern_matching.raw_match(x, self, **kwargs)
+		return embedding_utils.softmax(pattern_matching.raw_match(x, self, **kwargs))

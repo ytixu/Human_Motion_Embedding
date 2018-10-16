@@ -48,3 +48,25 @@ def parse_load_embedding(model, data, **kwargs):
 def interpolate(z_a, z_b, l=8):
         dist = (z_b - z_a)/l
         return np.array([z_a+i*dist for i in range(l+1)])
+
+def softmax(x):
+	'''
+	bowored from https://gist.github.com/stober/1946926
+	>>> res = softmax(np.array([0, 200, 10]))
+	>>> np.sum(res)
+	1.0
+	>>> np.all(np.abs(res - np.array([0, 1, 0])) < 0.0001)
+	True
+	>>> res = softmax(np.array([[0, 200, 10], [0, 10, 200], [200, 0, 10]]))
+	>>> np.sum(res, axis=1)
+	array([ 1.,  1.,  1.])
+	>>> res = softmax(np.array([[0, 200, 10], [0, 10, 200]]))
+	>>> np.sum(res, axis=1)
+	array([ 1.,  1.])
+	'''
+	b,t,d = x.shape
+	x = x.reshape((-1, d))
+	max_x = np.max(x, axis=1).reshape((-1, 1))
+	exp_x = np.exp(x - max_x)
+	x = exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
+	return x.reshape((b,t,d))
