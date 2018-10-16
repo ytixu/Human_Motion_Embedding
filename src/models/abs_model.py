@@ -24,6 +24,11 @@ class AbstractModel:
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
 
+		if args['normalization_method'] == 'norm_pi':
+			self.activation = 'tanh'
+		else:
+			self.activation = 'linear'
+
 		self.repeat_last = args['repeat_last']
 		self.supervised = args['supervised']
 

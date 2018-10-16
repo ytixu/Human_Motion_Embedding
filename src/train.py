@@ -27,7 +27,7 @@ def __eval(model, x, y, args, stats):
 	Evaluate training error using l2 distance of the Euler angle.
 	'''
 	y_pred = model.autoencode(x)
-	if y_pred.shape[-1] != len(args['actions']):
+	if y_pred.shape[-1] != len(args['actions']): # TODO
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 	return np.mean(utils.l2_error(y_pred, y))
 
@@ -84,7 +84,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		x, y = model.format_data(x)
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		norm_y = y
-		if y.shape[-1] != model.name_dim:
+		if y.shape[-1] != len(args['actions']) # TODO
 			norm_y = utils.normalize(y, stats, args['normalization_method'])
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 		history = model.model.fit(x_train, y_train,

@@ -61,7 +61,7 @@ class HHH_RNN(abs_model.AbstractModel):
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.latent_dim/2))(partials)
 				angles[i] = decode_euler(e)
-			angles = K_layer.concatenate(angles, axis=1))
+			angles = K_layer.concatenate(angles, axis=0))
 			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_n, axis=-2),
 							output_shape=(self.timesteps, self.output_dim))(angles)
 

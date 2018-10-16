@@ -42,19 +42,18 @@ class HH_RNN(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
-		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=decoder_activation)
-		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=self.activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
-		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=self.activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
 			angle = decode_euler_2(decode_euler_1(e))
 			residual = decode_repete(e)
 			residual = decode_residual_2(decode_residual_1(residual))
-			angle = K_layer.Activation(decoder_activation)(K_layer.add([decode_repete(angle), residual]))
+			angle = K_layer.Activation(self.activation)(K_layer.add([decode_repete(angle), residual]))
 			return angle
 
 		angles = [None]*len(self.sup_hierarchies)
