@@ -102,6 +102,9 @@ def classification_error(y_pred, y_true, stats):
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
 	y_pred = y_pred * (y_pred > 0)
+	print y_pred[0,0]
+	print y_pred[1,0]
+	print y_pred[2,0]
 	return [sckit_log_loss(y_true[i], y_pred[i]) for i in range(y_true.shape[0])]
 
 # pretty print scores
@@ -130,7 +133,7 @@ def print_classification_score(score, actions, precision='.2'):
 	N = 8
 	for action, i in actions.iteritems():
 		s,e = i*N,(i+1)*N
-		print action, np.mean(score[s:e])
+		print action, i,s,e, np.mean(score[s:e])
 
 
 if __name__ == '__main__':

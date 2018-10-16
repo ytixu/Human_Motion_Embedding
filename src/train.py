@@ -111,6 +111,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		print 'MEAN TRAIN', l2_train
 		print 'MEAN TEST', l2_test
 
+		l2_valid, mean_std_pred, std_std_pred, log_valid, mean_std_class, std_std_class = 0,0,0,0,0,0
 		# prediction error with validation data
 		if args['do_prediction']:
 			model.load_embedding(norm_x[rand_idx], pred_only=True, new=True)
@@ -134,10 +135,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
 			 	spamwriter = csv.writer(f)
-				if ['supervised']:
-					spamwriter.writerow([new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred, log_valid, mean_std_class, std_std_class])
-				else:
-				 	spamwriter.writerow([new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred])
+				spamwriter.writerow([new_loss, l2_train, l2_test, l2_valid, mean_std_pred, std_std_pred, log_valid, mean_std_class, std_std_class])
 
 
 if __name__ == '__main__':

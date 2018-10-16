@@ -12,7 +12,7 @@ import utils
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.6
+config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN']
@@ -113,7 +113,6 @@ def __load_validation_data(data_dir, stats, args):
 
 		if args['supervised']:
 			x[s:e,:,-l+action_idx] = 1
-
 	return x
 
 # Get load and save path
