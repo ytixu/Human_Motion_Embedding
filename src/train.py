@@ -84,7 +84,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 		x, y = model.format_data(x)
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		norm_y = y
-		if y.shape[-1] != len(args['actions']) # TODO
+		if y.shape[-1] != len(args['actions']): # TODO
 			norm_y = utils.normalize(y, stats, args['normalization_method'])
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 		history = model.model.fit(x_train, y_train,
