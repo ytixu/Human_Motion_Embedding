@@ -19,7 +19,7 @@ class AbstractModel:
 		self.model = None
 		self.encoder = None
 		self.decoder = None
-		self.embedding = None
+		self.embedding = {}
 
 		self.latent_dim = args['latent_dim']
 		self.input_dim = args['input_data_stats']['data_dim']
@@ -65,6 +65,12 @@ class AbstractModel:
 	@abstractmethod
 	def make_model(self): # build model
 		pass
+
+	def reset_embedding(self):
+		'''
+		Reset embedding
+		'''
+		self.embedding = {}
 
 	@abstractmethod
 	def load_embedding(self, data,**kwargs):

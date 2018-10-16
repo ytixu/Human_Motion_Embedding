@@ -16,6 +16,7 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN', 'HHH_RNN']
+OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN']
 
 # Get data and information on the data
 
@@ -219,6 +220,16 @@ def get_parse(mode):
 
 		args['actions'] = stats['action_list']
 
+	# model can do prediction and classification?
+	if args['method_name'] == 'C_RNN':
+		args['do_classification'] = True
+		args['do_prediction'] = False
+	else:
+		args['do_prediction'] = True
+		if args['supervised'] and args['method_name'] in OUR_METHODS:
+			args['do_classification'] = True
+		else:
+			args['do_classification'] = False
 
 	# load and output data
 	if mode == 'train':
@@ -229,15 +240,6 @@ def get_parse(mode):
 			if args['log_path'] is None:
 				args['log_path'] = __get_model_path_name(args, 'log')
 
-		if args['method_name'] == 'C_RNN':
-			args['do_classification'] = True
-			args['do_prediction'] = False
-		else:
-			args['do_prediction'] = True
-			if args['supervised'] and args['method_name'] in ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN']:
-				args['do_classification'] = True
-			else:
-				args['do_classification'] = False
 
 		# TODO: add output_data
 		return (args,

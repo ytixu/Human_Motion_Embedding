@@ -23,8 +23,8 @@ def parse_load_embedding(model, data, **kwargs):
 	'''
 
 	# reset embedding
-	if ('reset' in kwargs and kwargs['reset']) or model.embedding is None:
-		model.embedding = {}
+	if ('reset' in kwargs and kwargs['reset']):
+		model.reset_embedding()
 
 	# select relevant modalities
 	if 'modalities' in kwargs:

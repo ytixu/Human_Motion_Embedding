@@ -124,7 +124,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 		# classification error with validation data
 		if args['do_classification']:
-			# TODO: need to fix this for randomly expanded names
 			model.load_embedding(norm_x[rand_idx], class_only=True, new=True)
 			std, log_valid = __eval_class(model, xc_valid, yc_valid, args, stats)
 			if len(std) > 0:
@@ -140,6 +139,10 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train')
+
+	# test.py is only for testing pattern matching
+	# finish here if input methods do using pattern matching
+	assert args['method_name'] is in parse.OUR_METHODS
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])

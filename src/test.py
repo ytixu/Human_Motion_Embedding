@@ -93,15 +93,15 @@ def __compare_pattern_matching(part_data, comp_data, model, modalities, args):
 						cpl_data[s:e], stats)[-pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
-			if args['supervised']:
+			if args['do_classification']:
 				scores[mode][action]['name'] = utils.classification_error(
 					y_pred[s:e], cpl_data[s:e], stats)[-pred_n:]
 
 	modes = sorted(z_pred.keys())
 	print modes
 	for mode in z_pred:
-		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
-		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
+		z_pred[mode]['y'] = z_pred[mode]['y'].tolist()
+		z_pred[mode]['z'] = z_pred[mode]['z'].tolist()
 	z_pred['y_gt'] = cpl_data[:,-pred_n:].tolist()
 
 	# print score
@@ -207,7 +207,7 @@ if __name__ == '__main__':
 	args['output_dir'] = output_dir + '_pattern_matching'
 	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 
-	if args['supervised']:
+	if args['do_classification']:
 		# format validation data
 		xc_valid,_ = model.format_data(valid_data, for_classification=True)
 		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])
@@ -220,6 +220,7 @@ if __name__ == '__main__':
 
 		# load different embedding
 		# data_iter, data_iter_ = tee(data_iter)
+		model.reset_embedding()
 		kwargs = {'class_only': True}
 		__load_embeddding(model, data_iter, args, **kwargs)
 
