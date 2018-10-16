@@ -23,14 +23,15 @@ class HHH_RNN(abs_model.AbstractModel):
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
+		self.partial_latent_dim = args['latent_dim']/self.unit_n
 
 		return super(HHH_RNN, self).__init__(args)
 
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
+		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
+		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
 		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
 		def encode_partials(seq):
@@ -44,32 +45,34 @@ class HHH_RNN(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
-		decode_repete_partial = K_layer.RepeatVector(self.unit_t)
-		decode_partial = abs_model.RNN_UNIT(self.latent_dim/2, activation=decoder_activation)
+		decode_repete_partial = K_layer.RepeatVector(self.unit_n)
+		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
-		# decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=decoder_activation)
-		decode_euler = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler = K_layer.Dense(self.output_dim, activation=self.activation)
 
-		# decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_residual = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
+		decode_all = K_layer.Bidirectional(abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation), merge_mode='sum')
 
 		def decode_angle(e):
 			partials = decode_partial(decode_repete_partial(e))
 
 			angles = [None]*self.unit_n
 			for i in range(self.unit_n):
-				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.latent_dim/2))(partials)
+				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
 				angles[i] = decode_euler(e)
-			angles = K_layer.concatenate(angles, axis=0))
-			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_n, axis=-2),
+
+			angles = K_layer.concatenate(angles, axis=1)
+			angles = K_layer.Reshape((self.unit_n, self.output_dim))(angles)
+			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
 							output_shape=(self.timesteps, self.output_dim))(angles)
 
-			residual = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_n, axis=-2),
-							output_shape=(self.timesteps, self.latent_dim/2))(partials)
-			residual = decode_residual(residual)
+			residual = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
+							output_shape=(self.timesteps, self.partial_latent_dim))(partials)
+			residual = decode_all(residual)
 
-			angles = K_layer.Activation(decoder_activation)(K_layer.add([angles, residual]))
+			angles = K_layer.add([angles, residual])
+			#angles = decode_all(angles)
+			angles = K_layer.Activation(self.activation)(angles)
 			return angles
 
 		angles = [None]*len(self.sup_hierarchies)
