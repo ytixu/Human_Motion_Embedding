@@ -17,9 +17,8 @@ class Seq2Seq(abs_model.AbstractModel):
 		encoded = abs_model.RNN_UNIT(self.latent_dim)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		decoded = decode_rnn(decode_repete(encoded))
 		decoded_ = decode_rnn(decode_repete(z))

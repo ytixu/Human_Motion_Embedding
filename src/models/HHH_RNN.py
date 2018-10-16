@@ -45,17 +45,14 @@ class HHH_RNN(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
 		decode_repete_partial = K_layer.RepeatVector(self.unit_n)
-		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=decoder_activation)
+		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
-		decode_euler_1 = K_layer.Dense(self.output_dim*2, activation=decoder_activation)
-		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler_1 = K_layer.Dense(self.output_dim*2, activation=self.activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 
-		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*2, return_sequences=True, activation=decoder_activation)
-		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
-
-		#decode_all = K_layer.Bidirectional(abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation), merge_mode='sum')
+		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*2, return_sequences=True, activation=self.activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
 			partials = decode_partial(decode_repete_partial(e))
@@ -64,6 +61,7 @@ class HHH_RNN(abs_model.AbstractModel):
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
 				angles[i] = decode_euler_2(decode_euler_1(e))
+
 			angles = K_layer.concatenate(angles, axis=1)
 			angles = K_layer.Reshape((self.unit_n, self.output_dim))(angles)
 			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
@@ -74,8 +72,7 @@ class HHH_RNN(abs_model.AbstractModel):
 			residual = decode_residual_2(decode_residual_1(residual))
 
 			angles = K_layer.add([angles, residual])
-			#angles = decode_all(angles)
-			angles = K_layer.Activation(decoder_activation)(angles)
+			angles = K_layer.Activation(self.activation)(angles)
 			return angles
 
 		angles = [None]*len(self.sup_hierarchies)

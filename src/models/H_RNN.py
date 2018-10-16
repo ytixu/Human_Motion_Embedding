@@ -23,9 +23,8 @@ class H_RNN(abs_model.AbstractModel):
 		encoded = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_rnn = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		partials = [None]*len(self.hierarchies)
 		for i,h in enumerate(self.hierarchies):

@@ -40,13 +40,12 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decoder_activation = 'tanh'
-		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=decoder_activation)
-		decode_euler_2 = K_layer.Dense(self.output_dim, activation=decoder_activation)
+		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=self.activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=decoder_activation)
-		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=decoder_activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=self.activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		decoded =  decode_residual_2(decode_residual_1(decode_repete(encoded)))
 		decoded_ = decode_residual_2(decode_residual_1(decode_repete(z)))
