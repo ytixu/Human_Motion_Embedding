@@ -39,9 +39,9 @@ def __to_numb_array(row):
 def __get_data(row):
 	train = np.mean(__to_numb_array(row[2]))
 	test = np.mean(__to_numb_array(row[3]))
-	valid = __to_numb_array(row[7])[[i+int(row[0]) for i in SHORT_TERM_IDX]] # TODO: fix this
-	std_mean = float(row[8])
-	std_std = float(row[9])
+	valid = __to_numb_array(row[4])[[i+int(row[0]) for i in SHORT_TERM_IDX]] # TODO: fix this
+	std_mean = float(row[5])
+	std_std = float(row[6])
 	return [train, test], valid, [std_mean, std_std]
 
 def __format_performance(line):
@@ -52,7 +52,7 @@ def __format_performance(line):
 def plot_training_curve(args):
 	data = None
 	filename = args['path']
-	name = os.path.basename(filename).split('.')[0]
+	name = '.'.join(os.path.basename(filename).split('.')[:-1])
 	directory = os.path.dirname(filename)
 
 	iter_n = args['iterations']
@@ -104,7 +104,7 @@ def plot_training_curve(args):
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
 	ap.add_argument('-p', '--path', required=True,
-		help='Path to the .csv file')
+		help='Path to the .csv file', nargs = '*')
 	ap.add_argument('-i', '--iterations', required=False,
 		help='Plot only this many iterations', default=-1, type=int)
 	ap.add_argument('-s', '--save', required=False,
@@ -112,6 +112,9 @@ if __name__ == '__main__':
 		action='store_true')
 	args = vars(ap.parse_args())
 
-	plot_training_curve(args)
+	files = args['path']
+	for f in files:
+		args['path'] = f
+		plot_training_curve(args)
 
 # python viz_training_curves.py -p ../out/gru_t40_l1024_u10_loss-mean_absolute_error_opt-Nadam-lr=0.001_norm_pi_1538602020.csv -i 150
