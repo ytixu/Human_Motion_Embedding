@@ -23,7 +23,7 @@ class HHH_RNN(abs_model.AbstractModel):
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
-		self.partial_latent_dim = args['latent_dim']/2
+		self.partial_latent_dim = args['latent_dim']/self.unit_n*2
 
 		return super(HHH_RNN, self).__init__(args)
 
@@ -146,4 +146,9 @@ class HHH_RNN(abs_model.AbstractModel):
 		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
-		return embedding_utils.softmax(pattern_matching.raw_match(x, self, **kwargs))
+		return pattern_matching.raw_match(x, self, **kwargs)
+		if 'return_std' in kwargs and kwargs['return_std']:
+			std, x = x
+			return std, embedding_utils.softmax(x)
+		return embedding_utils.softmax(x)
+

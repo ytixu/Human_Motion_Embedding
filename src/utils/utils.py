@@ -133,7 +133,7 @@ def print_classification_score(score, actions, precision='.2'):
 	N = 8
 	for action, i in actions.iteritems():
 		s,e = i*N,(i+1)*N
-		print action, i,s,e, np.mean(score[s:e])
+		print action, np.mean(score[s:e])
 
 
 if __name__ == '__main__':
