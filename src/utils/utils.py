@@ -97,14 +97,41 @@ def prediction_error(y_pred, y_true, stats):
 		# use the same l2 for euclidean
 		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']])
 
+def softmax(x):
+        '''
+        bowored from https://gist.github.com/stober/1946926
+        >>> res = softmax(np.array([0, 200, 10]))
+        >>> np.sum(res)
+        1.0
+        >>> np.all(np.abs(res - np.array([0, 1, 0])) < 0.0001)
+        True
+        >>> res = softmax(np.array([[0, 200, 10], [0, 10, 200], [200, 0, 10]]))
+        >>> np.sum(res, axis=1)
+        array([ 1.,  1.,  1.])
+        >>> res = softmax(np.array([[0, 200, 10], [0, 10, 200]]))
+        >>> np.sum(res, axis=1)
+        array([ 1.,  1.])
+        '''
+	new_x = np.copy(x)
+	for i in range(new_x.shape[0]):
+	        max_x = np.max(new_x[i], axis=-1).reshape((-1, 1))
+        	exp_x = np.exp(new_x[i] - max_x)
+        	new_x[i] = exp_x / np.sum(exp_x, axis=-1).reshape((-1, 1))
+        return new_x
+
+
 def classification_error(y_pred, y_true, stats):
 	if y_pred.shape[-1] > stats['data_dim']:
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
 	y_pred = y_pred * (y_pred > 0)
-	print y_pred[0,0]
-	print y_pred[1,0]
-	print y_pred[2,0]
+	y_pred = softmax(y_pred)
+
+	#y_true = np.argmax(y_true, axis=-1)
+	#y_pred = np.argmax(y_pred, axis=-1)
+	#return np.sum(y_true - y_pred != 0, axis=-1)*1.0/y_pred.shape[1]
+
+	#np.argmax(y_pred, axis=-1)
 	return [sckit_log_loss(y_true[i], y_pred[i]) for i in range(y_true.shape[0])]
 
 # pretty print scores

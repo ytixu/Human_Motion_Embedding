@@ -140,10 +140,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train')
 
-	# test.py is only for testing pattern matching
-	# finish here if input methods do using pattern matching
-	assert args['method_name'] is in parse.OUR_METHODS
-
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])

@@ -24,6 +24,7 @@ class HM_RNN(abs_model.AbstractModel):
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
+		self.partial_latent_dim = args['latent_dim']/self.unit_n*2
 
 		# for different sensorimotor modalities
 		self.signal_dim = [args['input_data_stats']['data_dim'], len(args['actions'])]
@@ -42,11 +43,11 @@ class HM_RNN(abs_model.AbstractModel):
 		# different encoders for different modalities
 		modal_encode = [None]*len(self.signal_dim)
 		for i,d in enumerate(self.signal_dim):
-			modal_encode[i] = abs_model.RNN_UNIT(self.latent_dim/2)
+			modal_encode[i] = abs_model.RNN_UNIT(self.partial_latent_dim)
 		# global encoder for all the modalities together
 		global_encode = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
-		unit_encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
+		unit_encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
 		global_encode_reshape = K_layer.Reshape((self.unit_n*self.signal_n, self.latent_dim))
 
 		def encode_partials(seq, seq_dim, encoder):
@@ -66,7 +67,7 @@ class HM_RNN(abs_model.AbstractModel):
 			encoded = [None]*self.signal_n
 			for i,k in enumerate(idx):
 				s,e = k
-				rs = K_layer.Lambda(lambda x: x[:,:,:,s:e], output_shape=(self.timesteps, self.latent_dim/2))(seq)
+				rs = K_layer.Lambda(lambda x: x[:,:,:,s:e], output_shape=(self.timesteps, self.partial_latent_dim))(seq)
 				encoded[i] = encode_partials(rs, self.signal_dim[i], modal_encode[i])
 				encoded[i] = global_encode(encoded[i])
 
@@ -80,11 +81,11 @@ class HM_RNN(abs_model.AbstractModel):
 
 		# same as in HH_RNN
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=self.activation)
+		decode_euler_1 = K_layer.Dense(self.partial_latent_dim, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=self.activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):

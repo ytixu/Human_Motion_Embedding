@@ -49,17 +49,17 @@ def __print_scores(scores, supervised):
 		s = {a:scores[mode][a]['y'] for a in scores[mode]}
 		utils.print_score(s, 'motion', actions)
 		if supervised:
-			s = {a:scores[mode][a]['name'] for a in scores[mode]}
-			print utils.print_score(s, 'name', actions, False, precision='.4')
+			for a in scores[mode]:
+				print a, scores[mode][a]['name']
 		print '======='
 		print 'z', np.mean([scores[mode][a]['z'] for a in actions])
 		print ''
 
-def __compare_pattern_matching(part_data, comp_data, model, modalities, args):
+def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	partial_key, complete_key, partial_x_idx, complete_y_idx = modalities
 
 	# encode input
-	z_ref = model.encode(part_data, modality=partial_x_idx)
+	z_ref = model.encode(prt_data, modality=partial_x_idx)
 
 	# get matches
 	z_pred = {}
@@ -94,14 +94,14 @@ def __compare_pattern_matching(part_data, comp_data, model, modalities, args):
 				}
 			# compare action name
 			if args['do_classification']:
-				scores[mode][action]['name'] = utils.classification_error(
-					y_pred[s:e], cpl_data[s:e], stats)[-pred_n:]
+				scores[mode][action]['name'] = np.mean(utils.classification_error(
+					y_pred[s:e], cpl_data[s:e], stats))
 
 	modes = sorted(z_pred.keys())
 	print modes
 	for mode in z_pred:
-		z_pred[mode]['y'] = z_pred[mode]['y'].tolist()
-		z_pred[mode]['z'] = z_pred[mode]['z'].tolist()
+		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
+		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
 	z_pred['y_gt'] = cpl_data[:,-pred_n:].tolist()
 
 	# print score
@@ -179,6 +179,11 @@ if __name__ == '__main__':
 	args['quantitative_evaluation'] = True
 	stats = args['input_data_stats']
 
+	# test.py is only for testing pattern matching
+	# finish here if input methods do using pattern matching
+	assert args['method_name'] in parser.OUR_METHODS
+
+
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
@@ -231,7 +236,7 @@ if __name__ == '__main__':
 
 		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(xc_valid, data_valid, model, modalities, args)
+		__compare_pattern_matching(xc_valid, valid_data, model, modalities, args)
 
 		print 'Compare pattern matchin methods for generation'
 		args['output_dir'] = output_dir + '_pattern_matching_(generation)'

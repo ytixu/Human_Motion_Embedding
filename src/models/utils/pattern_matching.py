@@ -186,7 +186,7 @@ def batch_all_match(model, sample_zs, modalities):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
 			#TODO: remove this
-			#if dist_name in ['l2','cos']: continue
+			if dist_name in ['l2','cos']: continue
 
 			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)
 			kwargs['dist_method'] = dist

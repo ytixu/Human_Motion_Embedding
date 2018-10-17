@@ -147,8 +147,4 @@ class HHH_RNN(abs_model.AbstractModel):
 
 		# default using ADD method for pattern matching
 		return pattern_matching.raw_match(x, self, **kwargs)
-		if 'return_std' in kwargs and kwargs['return_std']:
-			std, x = x
-			return std, embedding_utils.softmax(x)
-		return embedding_utils.softmax(x)
 
