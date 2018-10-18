@@ -156,7 +156,7 @@ def print_score(scores, title, keys, print_title=True, precision='.2'):
 	avg_score = np.mean(scores.values(), axis=0)
 	print format_row('AVERAGE', avg_score[idx])
 
-def print_classification_score(score, actions, precision='.2'):
+def print_classification_score(score, actions):
 	N = 8
 	for action, i in actions.iteritems():
 		s,e = i*N,(i+1)*N
