@@ -23,7 +23,7 @@ class HHH_RNN(abs_model.AbstractModel):
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
-		self.partial_latent_dim = args['latent_dim']/self.unit_n*2
+		self.partial_latent_dim = args['latent_dim']
 
 		return super(HHH_RNN, self).__init__(args)
 
