@@ -75,8 +75,8 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	z_gt = model.encode(cpl_data, modality=complete_y_idx)
 	scores = {}
 	pred_n = complete_y_idx - partial_x_idx
-	if pred_n == 0:
-		pred_n = complete_y_idx
+	if pred_n != 0:
+		pred_n = partial_x_idx+1
 
 	for mode, matched in z_pred.iteritems():
 		z = matched['z']
@@ -90,7 +90,7 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
 				'y': (utils.prediction_error(y_pred[s:e],
-						cpl_data[s:e], stats)[-pred_n:]).tolist()  # compare motion
+						cpl_data[s:e], stats)[pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
 			if args['do_classification']:
@@ -100,9 +100,9 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	modes = sorted(z_pred.keys())
 	print modes
 	for mode in z_pred:
-		z_pred[mode]['y'] = z_pred[mode]['y'][:,-pred_n:].tolist()
-		z_pred[mode]['z'] = z_pred[mode]['z'][:,-pred_n:].tolist()
-	z_pred['y_gt'] = cpl_data[:,-pred_n:].tolist()
+		z_pred[mode]['y'] = z_pred[mode]['y'][:,pred_n:].tolist()
+		z_pred[mode]['z'] = z_pred[mode]['z'][:,pred_n:].tolist()
+	z_pred['y_gt'] = cpl_data[:,pred_n:].tolist()
 
 	# print score
 	__print_scores(scores, args['supervised'])
@@ -183,7 +183,6 @@ if __name__ == '__main__':
 	# finish here if input methods do using pattern matching
 	assert args['method_name'] in parser.OUR_METHODS
 
-
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
@@ -198,17 +197,17 @@ if __name__ == '__main__':
 
 	print 'Computing PCA ...'
 	args['output_dir'] = output_dir + '_PCA'
-	viz_embedding.plot_convex_hall(model.embedding, args)
+	#viz_embedding.plot_convex_hall(model.embedding, args)
 
 	print 'Test interpolaton ...'
 	args['output_dir'] = output_dir + '_interpolation'
-	__interpolate(model, stats, args)
+	#__interpolate(model, stats, args)
 
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
 	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	modalities = (model.timesteps_in-1, model.timesteps-1,
-				  model.timesteps_in-1, model.timesteps-1)
+	modalities = (model.timesteps_in-1, 74, #model.timesteps-1,
+				  model.timesteps_in-1, 74) #model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
 	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 
