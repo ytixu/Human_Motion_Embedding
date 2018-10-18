@@ -38,22 +38,25 @@ def __data_generator(data_dir, stats, args):
 	Return only the used_dims + one hot name (if applicable)
 	'''
 	t = args['timesteps']
+	actions = args['actions'].keys()
+
 	for f in glob.glob(data_dir+'*.npy'):
 		data = np.load(f)[:,stats['dim_to_use']]
-		n,d = data.shape
-		n = n-t+1
-		l = __name_dim(args)
+		action_name =  __get_action_from_file(f)
+		if action_name in actions:
+			n,d = data.shape
+			n = n-t+1
+			l = __name_dim(args)
 
-		x = np.zeros((n, t, d+l))
-		for i in range(n):
-			# (txd)
-			x[i,:,:d] = data[i:i+t,:]
+			x = np.zeros((n, t, d+l))
+			for i in range(n):
+				# (txd)
+				x[i,:,:d] = data[i:i+t,:]
 
-		if args['supervised']:
-			action_name = __get_action_from_file(f)
-			x[:,:,-l+args['actions'][action_name]] = 1
+			if args['supervised']:
+				x[:,:,-l+args['actions'][action_name]] = 1
 
-		yield x[:100]
+			yield x[:100]
 
 def __data_generator_random(data_dir, stats, args, b):
 	'''
@@ -65,10 +68,13 @@ def __data_generator_random(data_dir, stats, args, b):
 	t = args['timesteps']
 	data = {}
 	sample_n = 0
+	actions = args['actions'].keys()
 
 	for i, f in enumerate(glob.glob(data_dir+'*.npy')):
-		data[i] = (np.load(f)[:,stats['dim_to_use']], __get_action_from_file(f))
-		sample_n += 1
+		action_name =  __get_action_from_file(f)
+		if action_name in actions:
+			data[i] = (np.load(f)[:,stats['dim_to_use']], action_name)
+			sample_n += 1
 
 	conseq_n = 1
 	l = __name_dim(args)
@@ -97,20 +103,24 @@ def __load_validation_data(data_dir, stats, args):
 	'''
 	Load validation data into one matrix.
 	'''
+	actions = args['actions'].keys()
+
 	files = glob.glob(data_dir+'/valid/*-cond.npy')
 	l = __name_dim(args)
 	d = stats['data_dim']
 	N = 4 # 4 samples per action type and sub-action sequence
 	ti,to = args['timesteps_in'],args['timesteps_out']
-	x = np.zeros((len(files)*N,args['timesteps'],d+l))
+	x = np.zeros((len(actions)*2*N,args['timesteps'],d+l)) #TODO: generalize batch size len(actions)*2*N
 
 	for f in files:
-		action_idx = args['actions'][__get_action_from_file(f)]
-		sseq = int(f.split('_')[-1].split('-')[0])-1
-		s,e = (2*action_idx+sseq)*N,(2*action_idx+sseq+1)*N
-		x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
-		x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
-		# x is sorted by action type
+		action_name =  __get_action_from_file(f)
+		if action_name in actions:
+			action_idx = args['actions'][action_name]
+			sseq = int(f.split('_')[-1].split('-')[0])-1
+			s,e = (2*action_idx+sseq)*N,(2*action_idx+sseq+1)*N
+			x[s:e,:ti,:d] = np.load(f)[:,-ti:,stats['dim_to_use']]
+			x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
+			# x is sorted by action type
 
 		if args['supervised']:
 			x[s:e,:,-l+action_idx] = 1
@@ -190,7 +200,7 @@ def get_parse(mode):
 
 	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-rep', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
-	# ap.add_argument('-name', '--only_name', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('-name', '--only_name', required=False, help='Only load data with this action name', nargs = '*')
 	ap.add_argument('-re', '--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
 	ap.add_argument('-no_save', '--no_save', action='store_true', help='Skip saving model (for training)')
@@ -219,6 +229,11 @@ def get_parse(mode):
 			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
 
 		args['actions'] = stats['action_list']
+		if args['only_name'] is not None:
+			sorted_actions = sorted(stats['action_list'].items(), key=operator.itemgetter(1))
+			sorted_actions = [a for a,_ in sorted_actions if a in args['only_name']]
+			assert len(sorted_actions) != 0
+			args['actions'] = {a:i for i,a in enumerate(sorted_actions)}
 
 	# model can do prediction and classification?
 	if args['method_name'] == 'C_RNN':
