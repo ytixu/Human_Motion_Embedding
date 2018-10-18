@@ -463,4 +463,4 @@ def animate(xyz):
     ob.update( xyz[i,:] )
     plt.show(block=False)
     fig.canvas.draw()
-    plt.pause(0.01)
+    plt.pause(0.002)
