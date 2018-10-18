@@ -124,14 +124,6 @@ def classification_error(y_pred, y_true, stats):
 	if y_pred.shape[-1] > stats['data_dim']:
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
-	y_pred = y_pred * (y_pred > 0)
-	y_pred = softmax(y_pred)
-
-	#y_true = np.argmax(y_true, axis=-1)
-	#y_pred = np.argmax(y_pred, axis=-1)
-	#return np.sum(y_true - y_pred != 0, axis=-1)*1.0/y_pred.shape[1]
-
-	#np.argmax(y_pred, axis=-1)
 	return [sckit_log_loss(y_true[i], y_pred[i]) for i in range(y_true.shape[0])]
 
 # pretty print scores

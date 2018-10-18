@@ -1,4 +1,5 @@
 import argparse
+import operator
 import glob
 import json
 import os.path
@@ -70,10 +71,10 @@ def __data_generator_random(data_dir, stats, args, b):
 	sample_n = 0
 	actions = args['actions'].keys()
 
-	for i, f in enumerate(glob.glob(data_dir+'*.npy')):
+	for f in glob.glob(data_dir+'*.npy'):
 		action_name =  __get_action_from_file(f)
 		if action_name in actions:
-			data[i] = (np.load(f)[:,stats['dim_to_use']], action_name)
+			data[sample_n] = (np.load(f)[:,stats['dim_to_use']], action_name)
 			sample_n += 1
 
 	conseq_n = 1
@@ -122,8 +123,8 @@ def __load_validation_data(data_dir, stats, args):
 			x[s:e,-to:,:d] = np.load(f.replace('cond.npy','gt.npy'))[:,:to,stats['dim_to_use']]
 			# x is sorted by action type
 
-		if args['supervised']:
-			x[s:e,:,-l+action_idx] = 1
+			if args['supervised']:
+				x[s:e,:,-l+action_idx] = 1
 	return x
 
 # Get load and save path
