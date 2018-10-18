@@ -170,10 +170,11 @@ def __get_model_path_name(args, file_type):
 		output_name, unit, args['timesteps'], args['latent_dim'], args['unit_timesteps'],
 		args['loss_func'], opt_name, args['normalization_method'], time.time(), ext)
 
-def get_parse(mode):
+def get_parse(mode, method_name=None):
 	ap = argparse.ArgumentParser()
 	# TODO: adapt to conventional input format
-	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
+	if method_name is None:
+		ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
 	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
@@ -207,6 +208,8 @@ def get_parse(mode):
 	ap.add_argument('-no_save', '--no_save', action='store_true', help='Skip saving model (for training)')
 
 	args = vars(ap.parse_args())
+	if method_name is not None:
+		args['method_name'] = method_name
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
 	assert args['timesteps_in']  > 0
