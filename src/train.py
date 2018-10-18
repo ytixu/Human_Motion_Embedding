@@ -147,8 +147,8 @@ if __name__ == '__main__':
 	model = method_class(args)
 	if args['debug']:
 		__print_model(model)
-	if args['load_path'] != '':
-		print 'Load model ...'
+	if args['load_path'] != None:
+		print 'Load model ...', args['load_path']
 		model.load(args['load_path'])
 
 	SAVE_TO_DISK = not args['debug']

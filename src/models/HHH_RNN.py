@@ -45,7 +45,8 @@ class HHH_RNN(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decode_repete_partial = K_layer.RepeatVector(self.unit_n)
+		decode_repete_unit = K_layer.RepeatVector(self.unit_n)
+		decode_repete_partial = K_layer.RepeatVector(self.unit_t)
 		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
 		decode_euler_1 = K_layer.Dense(self.output_dim*2, activation=self.activation)
@@ -55,23 +56,27 @@ class HHH_RNN(abs_model.AbstractModel):
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
-			partials = decode_partial(decode_repete_partial(e))
+			partials = decode_partial(decode_repete_unit(e))
 
 			angles = [None]*self.unit_n
+			residuals = [None]*self.unit_n
 			for i in range(self.unit_n):
 				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
-				angles[i] = decode_euler_2(decode_euler_1(e))
+				angles[i] = decode_euler_2(decode_euler_1(rs))
+				rss = decode_repete_partial(rs)
+				residuals[i] = decode_residual_2(decode_residual_1(rss))
 
 			angles = K_layer.concatenate(angles, axis=1)
 			angles = K_layer.Reshape((self.unit_n, self.output_dim))(angles)
 			angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
 							output_shape=(self.timesteps, self.output_dim))(angles)
 
-			residual = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
-							output_shape=(self.timesteps, self.partial_latent_dim))(partials)
-			residual = decode_residual_2(decode_residual_1(residual))
+			#residual = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
+			#				output_shape=(self.timesteps, self.partial_latent_dim))(partials)
+			#residual = decode_residual_2(decode_residual_1(residual))
+			residuals = K_layer.concatenate(residuals, axis=1)
 
-			angles = K_layer.add([angles, residual])
+			angles = K_layer.add([angles, residuals])
 			angles = K_layer.Activation(self.activation)(angles)
 			return angles
 
