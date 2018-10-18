@@ -18,10 +18,10 @@ class C_RNN(abs_model.AbstractModel):
                 self.output_dim = self.name_dim
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
-		encoded = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
-		decoded = abs_model.RNN_UNIT(self.output_dim)(encoded)
-		decoded = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))(decoded)
-		output = K_layer.RepeatVector(self.timesteps)(decoded)
+		# encoded = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
+		output = abs_model.RNN_UNIT(self.output_dim, activation='sigmoid')(inputs)
+		# decoded = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))(decoded)
+		output = K_layer.RepeatVector(self.timesteps)(output)
 
 		self.model = Model(inputs, output)
 		self.encoder = self.model
