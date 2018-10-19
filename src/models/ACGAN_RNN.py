@@ -24,27 +24,33 @@ class ACGAN_RNN(abs_model.AbstractModel):
 
 		g_label = K_layer.Input(shape=(1,))
 		g_label_ = K_layer.RepeatVector((self.timesteps*self.input_dim))(g_label)
-		g_label_ = K_layer.Reshape((self.timesteps, self.input_dim))(g_label)
+		g_label_ = K_layer.Reshape((self.timesteps, self.input_dim))(g_label_)
 
 		gl = K_layer.Add()([noise, g_label_])
-		gl = K_layer.TimeDistributed(Dense(self.latent_dim))(gl)
+		gl = K_layer.TimeDistributed(K_layer.Dense(self.latent_dim))(gl)
 		gl = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(gl)
 		gl = abs_model.RNN_UNIT(self.input_dim, return_sequences=True, activation=self.activation)(gl)
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
-		dl = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)(inputs)
-		dl = Dropout(0.98)(dl)
-		d_label = K_layer.TimeDistributed(Dense(self.name_dim, activation='sigmoid'))(dl)
-		validity = K_layer.TimeDistributed(Dense(1, activation="sigmoid"))(dl)
+		dl_1 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
+		dl_2 = K_layer.Dropout(0.98)
+		dl_3 = K_layer.TimeDistributed(K_layer.Dense(1, activation="sigmoid"))
+		dl_4 = K_layer.TimeDistributed(K_layer.Dense(self.name_dim))
+		dl_5 = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))
+
+		dl_ = dl_2(dl_1(inputs))
+		validity_ = dl_3(dl_)
+		d_label_ = dl_5(dl_4(dl_))
 
 		self.encoder = Model([noise, g_label], gl, name='generator')
-		self.decoder = Model(inputs, [validity, d_label], name='discriminator')
+		self.decoder = Model(inputs, [validity_, d_label_], name='discriminator')
 
-		loss = ['binary_crossentropy', 'sparse_categorical_crossentropy']
+		loss = ['binary_crossentropy', 'categorical_crossentropy']
 		self.decoder.compile(optimizer=self.opt, loss=loss)
 
 		self.decoder.trainable = False
-		self.model = Model(g_inputs, [validity, d_label], name='gan')
+		validity, d_label = self.decoder(self.encoder([noise, g_label]))
+		self.model = Model([noise, g_label], [validity, d_label], name='gan')
 		self.model.compile(optimizer=self.opt, loss=loss)
 
 	def load_embedding(self, data, **kwargs):

@@ -2,6 +2,7 @@ import csv
 import numpy as np
 from sklearn import cross_validation
 
+from tqdm import tqdm
 from utils import parser, utils
 from models import ACGAN_RNN
 
@@ -40,50 +41,59 @@ def train(gan, data_iter, test_iter, valid_data, args):
 	x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
 
 	batch_n = args['batch_size']
-	valid = np.ones(batch_size)
-	fake = np.zeros(batch_size)
-	fake_labels = np.zeros((batch_size, gan.timesteps, gan.name_dim))
+	valid = np.ones((batch_n, gan.timesteps, 1))
+	fake = np.zeros((batch_n, gan.timesteps, 1))
+	fake_labels = np.zeros((batch_n, gan.timesteps, gan.name_dim))
 
 	iter_n = 1
 	for x in data_iter:
 		print 'ITER', iter_n
 		iter_n += 1
 
-		# Train Discriminator
-		noise = np.random.normal(0, 1, (batch_n, gan.timesteps, gan.input_dim))
-		sampled_labels = np.random.randint(0, gan.name_dim, (batch_n, 1))
-		gen_seq = gan.encoder.predict([noise, sampled_labels])
-
 		x, y = gan.format_data(x)
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
+		idx = range(args['generator_size'])
+		np.random.shuffle(idx)
 
-		d_loss_real = gan.decoder.train_on_batch(x, [valid, y])
-		d_loss_fake = gan.decoder.train_on_batch(gen_imgs, [fake, fake_labels])
-		d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+		g_loss, d_loss = 0,0
+		for i in tqdm(range(args['generator_size']/batch_n)):
+			# Train Discriminator
+			noise = np.random.normal(0, 1, (batch_n, gan.timesteps, gan.input_dim))
+			sampled_labels = np.random.randint(0, gan.name_dim, (batch_n, 1))
+			gen_seq = gan.encoder.predict([noise, sampled_labels])
 
-		# Train Generator
-		g_loss = gan.encoder.train_on_batch([noise, sampled_labels], [valid, sampled_labels])
+			s, e = i*batch_n, (i+1)*batch_n
+			d_loss_real = gan.decoder.train_on_batch(norm_x[idx[s:e]], [valid, y[idx[s:e]]])
+			d_loss_fake = gan.decoder.train_on_batch(gen_seq, [fake, fake_labels])
+			d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+
+			# Train Generator
+			sampled_y = np.zeros((batch_n, gan.timesteps, gan.name_dim))
+			for i in range(batch_n):
+				sampled_y[i,:,sampled_labels[i]] = 1
+			g_loss = gan.model.train_on_batch([noise, sampled_labels], [valid, sampled_y])
 
 		__eval_loss(gan, d_loss, g_loss, args)
 
 		# classification
 		# training data
 		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
-		y_pred = gan.decoder.predict(norm_x[rand_idx])
-		err_train = utils.classification_error(y_pred, y[rand_idx], stats)
-		utils.print_classification_score(err_train, args['actions'])
+		v, y_pred = gan.decoder.predict(norm_x[rand_idx])
+		err_train = utils.classification_error(y_pred[:,-2:], y[rand_idx][:,-2:], stats)
+		print 'Training', np.mean(err_train)
 
 		# test data
 		x_test = test_iter.next()
-		x_test, y_test = model.format_data(x_test)
+		x_test, y_test = gan.format_data(x_test)
 		x_test = utils.normalize(x_test, stats, args['normalization_method'])
-		y_pred = gan.decoder.predict(x_test)
-		err_test = utils.classification_error(y_pred, y_test, stats)
-		utils.print_classification_score(err_test, args['actions'])
+		v, y_pred = gan.decoder.predict(x_test)
+		err_test = utils.classification_error(y_pred[:,-2:], y_test[:,-2:], stats)
+		print 'Test', np.mean(err_test)
 
 		# valid data
-		y_pred = gan.decoder.predict(x_valid)
-		err_valid = utils.classification_error(y_pred, y_valid, stats)
+		v, y_pred = gan.decoder.predict(x_valid)
+		print y_pred[0][-1]
+		err_valid = utils.classification_error(y_pred[:,-2:], y_valid[:,-2:], stats)
 		utils.print_classification_score(err_valid, args['actions'])
 
 		if SAVE_TO_DISK:
@@ -94,7 +104,7 @@ def train(gan, data_iter, test_iter, valid_data, args):
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train', 'ACGAN_RNN')
 
-	gan = ACGAN_RNN(args['method_name'])
+	gan = ACGAN_RNN.ACGAN_RNN(args)
 
 	if args['debug']:
 		__print_model(gan)
