@@ -78,19 +78,20 @@ def l2_error(x1, x2):
 	return np.mean(np.sqrt(np.sum(np.square(x1 - x2), -1)), 0)
 
 def __convert_expmap2euler(x, stats):
-	#TODO: fix this
 	x = recover(x, stats)
-	x = converter.sequence_expmap2euler(x)
-	x[:,:,:6] = 0
-	return x
+	x_euler = np.zeros(x.shape)
+	for i in range(x.shape[0]):
+		x_euler[i] = converter.sequence_expmap2euler(x[i])
+	x_euler[:,:,:6] = 0
+	return x_euler
 
 def prediction_error(y_pred, y_true, stats):
+	print stats['parameterization']
 	if stats['parameterization'] == 'expmap':
-		# TODO: test this
 		# similar to
 		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203
-		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']])
-		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']])
+		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']], stats)
+		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']], stats)
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
 		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use])
 	else:

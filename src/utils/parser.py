@@ -220,6 +220,7 @@ def get_parse(mode, method_name=None):
 	if 'output_data' in args and args['output_data'] is not None:
 		data_types = ['input_data', 'output_data']
 	for t in data_types:
+		args[t] = args[t].strip('/')
 		stats = __get_stats(args[t])
 		ts = t+'_stats'
 		args[ts] = {
@@ -229,6 +230,9 @@ def get_parse(mode, method_name=None):
 			'orig_data_dim': len(stats['data_mean']),
 			'parameterization': os.path.basename(args[t])
 		}
+
+		assert args[ts]['parameterization'] == 'euler' or args['normalization_method'] != 'norm_pi'
+
 		for k in ['data_std', 'data_min', 'data_max']:
 			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
 
