@@ -16,8 +16,8 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.8
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN', 'HHH_RNN']
-OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
+OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
 
 # Get data and information on the data
 
@@ -176,36 +176,35 @@ def get_parse(mode, method_name=None):
 	if method_name is None:
 		ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
-	ap.add_argument('-id', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
+	ap.add_argument('-d', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
-	ap.add_argument('-gs', '--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
-	ap.add_argument('-ts', '--test_size', required=False, help='Size of the test bath', default=100, type=int)
-	ap.add_argument('-es', '--embedding_size', required=False, help='Size of the embedding for testing', default=1000, type=int)
+	ap.add_argument('--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
+	ap.add_argument('--test_size', required=False, help='Size of the test bath', default=100, type=int)
+	ap.add_argument('--embedding_size', required=False, help='Size of the embedding for testing', default=1000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
-	ap.add_argument('-w', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
+	ap.add_argument('-n', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
 
-	ap.add_argument('-lp', '--load_path', required=False, help='Model path')
-	ap.add_argument('-sp', '--save_path', required=False, help='Model save path')
-	ap.add_argument('-log', '--log_path', required=False, help='Log file for loss history')
+	ap.add_argument('-p', '--load_path', required=False, help='Model path')
+	ap.add_argument('--save_path', required=False, help='Model save path')
+	ap.add_argument('--log_path', required=False, help='Log file for loss history')
 
 	ap.add_argument('-t', '--timesteps', required=False, help='Total timestep size', default=40, type=int)
-	# ap.add_argument('-ti', '--timesteps_in', required=False, help='Input timesteps', default=30, type=int)
-	ap.add_argument('-to', '--timesteps_out', required=False, help='Number of output frames (so input size = total timsteps - ouput size)', default=10, type=int)
-	ap.add_argument('-ut', '--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
-	ap.add_argument('-hs', '--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
-	ap.add_argument('-iter', '--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
-	ap.add_argument('-bs', '--batch_size', required=False, help='Batch size', default=64, type=int)
-	ap.add_argument('-ld', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
-	ap.add_argument('-loss', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
-	ap.add_argument('-opt', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
-	ap.add_argument('-lstm', '--lstm', action='store_true', help='Using LSTM instead of the default GRU')
+	ap.add_argument('-o', '--timesteps_out', required=False, help='Number of output frames (so input size = total timsteps - ouput size)', default=10, type=int)
+	ap.add_argument('--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
+	ap.add_argument('--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
+	ap.add_argument('--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
+	ap.add_argument('--batch_size', required=False, help='Batch size', default=64, type=int)
+	ap.add_argument('-e', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
+	ap.add_argument('-L', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
+	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
+	ap.add_argument('--lstm', action='store_true', help='Using LSTM instead of the default GRU')
 
-	ap.add_argument('-sup', '--supervised', action='store_true', help='With action names')
-	ap.add_argument('-rep', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
-	ap.add_argument('-name', '--only_name', required=False, help='Only load data with this action name', nargs = '*')
-	ap.add_argument('-re', '--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
-	ap.add_argument('-debug', '--debug', action='store_true', help='Debug mode (no output file to disk)')
-	ap.add_argument('-no_save', '--no_save', action='store_true', help='Skip saving model (for training)')
+	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
+	ap.add_argument('-r', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
+	ap.add_argument('--actions', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
+	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
+	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
 
 	args = vars(ap.parse_args())
 	if method_name is not None:
