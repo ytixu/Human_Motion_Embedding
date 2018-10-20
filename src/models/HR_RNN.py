@@ -8,7 +8,7 @@ from keras.models import Model
 import abs_model
 from utils import pattern_matching, embedding_utils, formatter
 
-class HHH_RNN(abs_model.AbstractModel):
+class HR_RNN(abs_model.AbstractModel):
 	def __init__(self, args):
 		self.timesteps = args['timesteps']
 		self.timesteps_in = args['timesteps_in'] # this is the number of frame we want to input for comparing against prediction baselines
@@ -25,7 +25,7 @@ class HHH_RNN(abs_model.AbstractModel):
 		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 		self.partial_latent_dim = args['latent_dim']
 
-		return super(HHH_RNN, self).__init__(args)
+		return super(HR_RNN, self).__init__(args)
 
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
