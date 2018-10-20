@@ -47,34 +47,34 @@ class HR_RNN(abs_model.AbstractModel):
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decode_repete_unit = K_layer.RepeatVector(self.unit_n)
 		decode_repete_partial = K_layer.RepeatVector(self.unit_t)
-		decode_partial = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
+		decode_partial_rnn = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
+		decode_partial_dense = K_layer.Dense(self.partial_latent_dim, activation=self.activation)
 
 		decode_euler_1 = K_layer.Dense(self.output_dim*2, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
+		decode_euler_3 = K_layer.Dense(self.output_dim, activation=self.activation)
 
-		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*8, return_sequences=True, activation=self.activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
-			partials = decode_partial(decode_repete_unit(e))
+			partials = decode_partial_rnn(decode_repete_unit(e))
+			#partials = K_layer.TimeDistributed(decode_partial_dense)(partials)
 
 			angles = [None]*self.unit_n
 			for i in range(self.unit_n):
-				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
-				rss = decode_repete_partial(rs)
-				angles[i] = decode_residual_1(rss)
-				angles[i] = decode_residual_2(angles[i])
-				angles[i] = K_layer.TimeDistributed(decode_euler_1)(angles[i])
-				angles[i] = K_layer.TimeDistributed(decode_euler_2)(angles[i])
+				angles[i] = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.partial_latent_dim,))(partials)
+				angles[i] = decode_repete_partial(angles[i])
+				#angles[i] = decode_residual_1(angles[i])
+				#angles[i] = decode_residual_2(angles[i])
+				#angles[i] = K_layer.TimeDistributed(decode_euler_1)(angles[i])
+				#angles[i] = K_layer.TimeDistributed(decode_euler_2)(angles[i])
+				#angles[i] = K_layer.TimeDistributed(decode_euler_3)(angles[i])
 
 			angles = K_layer.concatenate(angles, axis=1)
-			# angles = K_layer.Reshape((self.unit_n, self.output_dim))(angles)
-			# angles = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, self.unit_t, axis=1),
-			# 				output_shape=(self.timesteps, self.output_dim))(angles)
-
-			# residuals = K_layer.concatenate(residuals, axis=1)
-
-			# angles = K_layer.add([angles, residuals])
+			angles = decode_residual_2(angles)
+			angles = K_layer.TimeDistributed(decode_euler_1)(angles)
+			angles = K_layer.TimeDistributed(decode_euler_2)(angles)
 			angles = K_layer.Activation(self.activation)(angles)
 			return angles
 

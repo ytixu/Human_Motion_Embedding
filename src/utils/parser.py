@@ -201,7 +201,7 @@ def get_parse(mode, method_name=None):
 
 	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-r', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
-	ap.add_argument('--actions', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('--action', required=False, help='Only load data with this action name', nargs = '*')
 	ap.add_argument('--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
@@ -236,9 +236,9 @@ def get_parse(mode, method_name=None):
 			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
 
 		args['actions'] = stats['action_list']
-		if args['only_name'] is not None:
+		if args['action'] is not None:
 			sorted_actions = sorted(stats['action_list'].items(), key=operator.itemgetter(1))
-			sorted_actions = [a for a,_ in sorted_actions if a in args['only_name']]
+			sorted_actions = [a for a,_ in sorted_actions if a in args['action']]
 			assert len(sorted_actions) != 0
 			args['actions'] = {a:i for i,a in enumerate(sorted_actions)}
 
