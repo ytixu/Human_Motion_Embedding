@@ -18,6 +18,7 @@ set_session(tf.Session(config=config))
 
 METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
 OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
+NOISE_VAR = 0.01
 
 # Get data and information on the data
 
@@ -56,7 +57,7 @@ def __data_generator(data_dir, stats, args):
 
 			if args['supervised']:
 				if args['add_noise']:
-					x[:,:,-l:] = np.random.normal(0,0.05,x[:,:,-l:].shape)
+					x[:,:,-l:] = np.random.normal(0,NOISE_VAR,x[:,:,-l:].shape)
 				x[:,:,-l+args['actions'][action_name]] = 1
 
 			yield x[:100]
@@ -99,7 +100,7 @@ def __data_generator_random(data_dir, stats, args, b):
 				s, e = j*conseq_n, (j+1)*conseq_n
 				x[s:e,:,-l:] = 0
 				if args['add_noise']:
-					x[s:e,:,-l:] = np.random.normal(0,0.05,x[s:e,:,-l:].shape)
+					x[s:e,:,-l:] = np.random.normal(0,NOISE_VAR,x[s:e,:,-l:].shape)
 				x[s:e,:,-l+args['actions'][action_name]] = 1
 
 		yield x
