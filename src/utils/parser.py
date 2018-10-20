@@ -55,6 +55,8 @@ def __data_generator(data_dir, stats, args):
 				x[i,:,:d] = data[i:i+t,:]
 
 			if args['supervised']:
+				if args['add_noise']:
+					x[:,:,-l:] = np.random.normal(0,0.05,x[:,:,-l:].shape)
 				x[:,:,-l+args['actions'][action_name]] = 1
 
 			yield x[:100]
@@ -96,6 +98,8 @@ def __data_generator_random(data_dir, stats, args, b):
 			if args['supervised']:
 				s, e = j*conseq_n, (j+1)*conseq_n
 				x[s:e,:,-l:] = 0
+				if args['add_noise']:
+					x[s:e,:,-l:] = np.random.normal(0,0.05,x[s:e,:,-l:].shape)
 				x[s:e,:,-l+args['actions'][action_name]] = 1
 
 		yield x
@@ -202,6 +206,7 @@ def get_parse(mode, method_name=None):
 	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-r', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
 	ap.add_argument('--action', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('--add_noise', required=False, help='Add noise to the action name', nargs = '*')
 	ap.add_argument('--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
