@@ -241,7 +241,7 @@ def whitening(to_type='euler'):
 	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])[6:]
 
 	print 'Used dimensions:', len(dimensions_to_use), dimensions_to_use
-	# For euler:
+	# For euler and expmap:
 	# 48, [6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
 
 	data_std[dimensions_to_ignore] = 1.0
