@@ -84,7 +84,7 @@ def __data_generator_random(data_dir, stats, args, b):
 	l = __name_dim(args)
 	x = np.zeros((b,t,stats['data_dim']+l))
 
-	for i in range(args['iterations']):
+	for i in range(args['epoch']):
 		sample_idx = np.random.choice(sample_n, b/conseq_n)
 
 		for j,sample_i in enumerate(sample_idx):
@@ -181,7 +181,7 @@ def get_parse(mode, method_name=None):
 	if method_name is None:
 		ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
-	ap.add_argument('-d', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
+	ap.add_argument('-D', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
 	ap.add_argument('--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
 	ap.add_argument('--test_size', required=False, help='Size of the test bath', default=100, type=int)
@@ -189,7 +189,7 @@ def get_parse(mode, method_name=None):
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
 	ap.add_argument('-n', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
 
-	ap.add_argument('-p', '--load_path', required=False, help='Model path')
+	ap.add_argument('-P', '--load_path', required=False, help='Model path')
 	ap.add_argument('--save_path', required=False, help='Model save path')
 	ap.add_argument('--log_path', required=False, help='Log file for loss history')
 
@@ -197,11 +197,14 @@ def get_parse(mode, method_name=None):
 	ap.add_argument('-o', '--timesteps_out', required=False, help='Number of output frames (so input size = total timsteps - ouput size)', default=10, type=int)
 	ap.add_argument('--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
 	ap.add_argument('--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
-	ap.add_argument('--iterations', required=False, help='Number of iterations for training', default=int(1e5), type=int)
+	ap.add_argument('--epoch', required=False, help='Number of epoch for training', default=1000, type=int)
 	ap.add_argument('--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-e', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-L', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
-	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam(lr=0.001)')
+	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam')
+	ap.add_argument('-l', '--learning_rate', required=False, help='The learning rate', default=0.001, type=float)
+	ap.add_argument('-d', '--decay', required=False, help='The decay factor of the learning rate (decay=1 is no decay)', default='0.95', type=float)
+	ap.add_argument('--decay_after', required=False, help='The number of epoch before decaying', default='10', type=int)
 	ap.add_argument('--lstm', action='store_true', help='Using LSTM instead of the default GRU')
 
 	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
@@ -218,6 +221,8 @@ def get_parse(mode, method_name=None):
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
 	assert args['timesteps_in']  > 0
+
+	# Parse optimizer
 	args['optimizer'] = 'optimizers.'+args['optimizer']
 
 	# load some statistics and other information about the data

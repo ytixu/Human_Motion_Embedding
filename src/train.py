@@ -78,15 +78,17 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 	iter_n = 1
 	for x in data_iter:
-		print 'ITER', iter_n
+		print 'Epoch', iter_n
 		iter_n += 1
 
+		# -- TRAINING --
 		# normalization
 		x, y = model.format_data(x)
 		norm_x = utils.normalize(x, stats, args['normalization_method'])
 		norm_y = y
 		if y.shape[-1] != len(args['actions']): # TODO
 			norm_y = utils.normalize(y, stats, args['normalization_method'])
+		# train
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 		history = model.model.fit(x_train, y_train,
 					shuffle=True,
@@ -95,7 +97,11 @@ def train(model, data_iter, test_iter, valid_data, args):
 					validation_data=(x_test, y_test))
 
 		new_loss = __eval_loss(model, history, args)
+		# decay
+		if iter_n % args['decay_after']:
+			model.decay_learning_rate()
 
+		# -- EVALUATION --
 		# populate embedding with random training data
 		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
 

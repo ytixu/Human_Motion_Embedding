@@ -42,6 +42,8 @@ class AbstractModel:
 
 		self.loss_func = args['loss_func']
 		self.opt = eval(args['optimizer'])
+		self.lr = args['learning_rate']
+		self.decay = args['decay']
 
 		if args['lstm']:
 			from keras.layers import LSTM as RNN_UNIT
@@ -49,9 +51,15 @@ class AbstractModel:
 			from keras.layers import GRU as RNN_UNIT
 
 		self.make_model()
+		self.model.compile(optimizer=self.opt(lr=self.lr), loss=self.loss_func)
 
 	def load(self, load_path):
 		self.model.load_weights(load_path)
+
+	def decay_learning_rate(self):
+		if self.decay < 1:
+			self.lr = self.lr * self.decay
+			self.model.compile(optimizer=self.opt(lr=self.lr), loss=self.loss_func)
 
 	def autoencode(self, x):
 		return self.model.predict(x)

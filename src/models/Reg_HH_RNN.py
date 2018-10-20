@@ -53,4 +53,3 @@ class Reg_HH_RNN(HH_RNN.HH_RNN):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
-		self.model.compile(optimizer=self.opt, loss=self.loss_func)

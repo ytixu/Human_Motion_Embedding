@@ -15,7 +15,7 @@ class C_RNN(abs_model.AbstractModel):
 
 	def make_model(self):
 		self.input_dim = self.input_dim - self.name_dim
-                self.output_dim = self.name_dim
+		self.output_dim = self.name_dim
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		encoded = K_layer.Bidirectional(abs_model.RNN_UNIT(self.output_dim))(inputs)
@@ -27,7 +27,6 @@ class C_RNN(abs_model.AbstractModel):
 		self.model = Model(inputs, output)
 		self.encoder = self.model
 		self.decoder = self.model
-		self.model.compile(optimizer=self.opt, loss=self.loss_func)
 
 	def load_embedding(self, data, **kwargs):
 		# no embedding

@@ -54,8 +54,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
-		self.model.compile(optimizer=self.opt, loss=self.loss_func)
-
 	def __get_sup_index(self, i):
 		return (i+1)/self.unit_t-1
 

@@ -38,8 +38,6 @@ class VL_RNN(abs_model.AbstractModel):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
-		self.model.compile(optimizer=self.opt, loss=self.loss_func)
-
 	def load_embedding(self, data, **kwargs):
 		m, sets, data = embedding_utils.parse_load_embedding(self, data, **kwargs)
 

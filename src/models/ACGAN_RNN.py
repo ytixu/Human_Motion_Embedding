@@ -45,13 +45,12 @@ class ACGAN_RNN(abs_model.AbstractModel):
 		self.encoder = Model([noise, g_label], gl, name='generator')
 		self.decoder = Model(inputs, [validity_, d_label_], name='discriminator')
 
-		loss = ['binary_crossentropy', 'categorical_crossentropy']
+		self.loss = ['binary_crossentropy', 'categorical_crossentropy']
 		self.decoder.compile(optimizer=self.opt, loss=loss)
 
 		self.decoder.trainable = False
 		validity, d_label = self.decoder(self.encoder([noise, g_label]))
 		self.model = Model([noise, g_label], [validity, d_label], name='gan')
-		self.model.compile(optimizer=self.opt, loss=loss)
 
 	def load_embedding(self, data, **kwargs):
 		# no embedding
