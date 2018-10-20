@@ -16,8 +16,8 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.8
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
-OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HM_RNN', 'HHH_RNN', 'HR_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq']
+OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN']
 NOISE_VAR = 0.01
 
 # Get data and information on the data
@@ -183,7 +183,7 @@ def get_parse(mode, method_name=None):
 
 	ap.add_argument('-D', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
-	ap.add_argument('--generator_size', required=False, help='Size of the batch in the random data generator', default=10000, type=int)
+	ap.add_argument('--generator_size', required=False, help='Size of the batch in the random data generator, which is the number of sample per epoch during training', default=10000, type=int)
 	ap.add_argument('--test_size', required=False, help='Size of the test bath', default=100, type=int)
 	ap.add_argument('--embedding_size', required=False, help='Size of the embedding for testing', default=1000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
@@ -201,7 +201,7 @@ def get_parse(mode, method_name=None):
 	ap.add_argument('--batch_size', required=False, help='Batch size', default=64, type=int)
 	ap.add_argument('-e', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
 	ap.add_argument('-L', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
-	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam')
+	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Adam')
 	ap.add_argument('-l', '--learning_rate', required=False, help='The learning rate', default=0.001, type=float)
 	ap.add_argument('-d', '--decay', required=False, help='The decay factor of the learning rate (decay=1 is no decay)', default='0.95', type=float)
 	ap.add_argument('--decay_after', required=False, help='The number of epoch before decaying', default='10', type=int)

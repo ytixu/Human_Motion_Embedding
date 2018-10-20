@@ -70,12 +70,16 @@ def recover(x, stats):
 
 SHORT_TERM_IDX = [1,3,7,9]
 
-def l2_error(x1, x2):
+def l2_error(x1, x2, averaged=True):
 	'''
 	This will return one number if dim = 2
 	or will return a list if dim = 3
 	'''
-	return np.mean(np.sqrt(np.sum(np.square(x1 - x2), -1)), 0)
+	s = np.sqrt(np.sum(np.square(x1 - x2), -1))
+	if averaged:
+		return np.mean(s, 0)
+	else:
+		return s
 
 def __convert_expmap2euler(x, stats):
 	x = recover(x, stats)
@@ -85,18 +89,17 @@ def __convert_expmap2euler(x, stats):
 	x_euler[:,:,:6] = 0
 	return x_euler
 
-def prediction_error(y_pred, y_true, stats):
-	print stats['parameterization']
+def prediction_error(y_pred, y_true, stats, averaged=True):
 	if stats['parameterization'] == 'expmap':
 		# similar to
 		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203
 		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']], stats)
 		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']], stats)
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
-		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use])
+		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use], averaged)
 	else:
 		# use the same l2 for euclidean
-		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']])
+		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']], averaged)
 
 def softmax(x):
         '''
@@ -143,8 +146,8 @@ def print_score(scores, title, keys, print_title=True, precision='.2'):
 	idx = range(1,len(scores[keys[0]]),2)
 	if print_title:
 		print format_row('milliseconds', [40*(i+1) for i in idx], p='.0')
-	#for key in keys:
-	#	print format_row(key, np.array(scores[key])[idx])
+	for key in keys:
+		print format_row(key, np.array(scores[key])[idx])
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)
 	print format_row('AVERAGE', avg_score[idx])

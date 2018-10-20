@@ -40,7 +40,7 @@ def __eval_pred(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return std, utils.prediction_error(y_pred, y, stats)
+	return std, utils.prediction_error(y_pred, y, stats, averaged=False)
 
 def __eval_class(model, x, y, args, stats):
 	'''
@@ -52,6 +52,17 @@ def __eval_class(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
                 std, y_pred = y_pred
 	return std, utils.classification_error(y_pred, y, stats)
+
+def __combine_prediction_score(score, actions):
+	N = 8
+	n = len(actions)
+	new_s = {}
+	keys = ['']*n
+	for a,i in actions.iteritems():
+		s,e = i*N,(i+1)*N
+		new_s[a] = np.mean(score[s:e], axis=0)
+		keys[i] = a
+	utils.print_score(new_s, 'ADD', keys)
 
 def __print_model(model):
 	model.model.summary()
@@ -98,8 +109,9 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 		new_loss = __eval_loss(model, history, args)
 		# decay
-		if iter_n % args['decay_after']:
+		if iter_n % args['decay_after'] == 0:
 			model.decay_learning_rate()
+			print 'New learning rate:', model.lr
 
 		# -- EVALUATION --
 		# populate embedding with random training data
@@ -127,7 +139,8 @@ def train(model, data_iter, test_iter, valid_data, args):
 			if len(std) > 0:
 				mean_std_pred, std_std_pred = np.mean(std), np.std(std)
 				print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
-			print 'SHORT-TERM (80-160-320-400ms)', l2_valid[utils.SHORT_TERM_IDX]
+			__combine_prediction_score(l2_valid, args['actions'])
+			#print 'SHORT-TERM (80-160-320-400ms)', l2_valid[utils.SHORT_TERM_IDX]
 
 		# classification error with validation data
 		if args['do_classification']:
