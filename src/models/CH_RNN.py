@@ -5,32 +5,33 @@ from keras.models import Model
 from keras import backend as K
 
 import HH_RNN
+import abs_model
 
 class CH_RNN(HH_RNN.HH_RNN):
 
-	def __create_conv_encoder(self, nb_filter, filter_length):
+	def __create_conv_encoder(self):
 		# The first conv layer learns `nb_filter` filters (aka kernels), each of size ``(filter_length, nb_input_series)``.
 		# Its output will have shape (None, window_size - filter_length + 1, nb_filter), i.e., for each position in
 		# the input timeseries, the activation of each filter at that position.
-		conv1 = Convolution1D(nb_filter=nb_filter, filter_length=filter_length, activation='relu', input_shape=(self.unit_t, self.input_dim))()
+		conv1 = K_layer.Convolution1D(nb_filter=128, filter_length=3, activation='relu', input_shape=(self.unit_t, self.input_dim))
 		# Downsample the output of convolution by 2X.
-		pool1 = MaxPooling1D()
-		conv2 = Convolution1D(nb_filter=nb_filter, filter_length=filter_length, activation='relu')
-		pool2 = MaxPooling1D()
-		flat = Flatten()
+		pool1 = K_layer.MaxPooling1D()
+		conv2 = K_layer.Convolution1D(nb_filter=64, filter_length=3, activation='relu')
+		pool2 = K_layer.MaxPooling1D()
+		flat = K_layer.Flatten()
 		# For binary classification, change the activation to 'sigmoid'
-		dense = Dense(self.latent_dim/2, activation=self.activation)
+		dense = K_layer.Dense(200, activation=self.activation)
 
 		return conv1, pool1, conv2, pool2, flat, dense
 
 	def make_model(self):
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
+		encode_reshape = K_layer.Reshape((self.unit_n, 200))
 		# encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
 		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
-		conv1, pool1, conv2, pool2, flat, dense = __create_conv_encoder(64, 3)
+		conv1, pool1, conv2, pool2, flat, dense = self.__create_conv_encoder()
 		def conv_encoder(seq):
 			return dense(flat(pool2(conv2(pool1(conv1(seq))))))
 

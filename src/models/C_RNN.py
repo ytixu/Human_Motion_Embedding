@@ -17,27 +17,30 @@ class C_RNN(abs_model.AbstractModel):
 		# The first conv layer learns `nb_filter` filters (aka kernels), each of size ``(filter_length, nb_input_series)``.
 		# Its output will have shape (None, window_size - filter_length + 1, nb_filter), i.e., for each position in
 		# the input timeseries, the activation of each filter at that position.
-		conv1 = Convolution1D(nb_filter=64, filter_length=3, activation='relu', input_shape=(self.timesteps, self.input_dim))()
+		conv1 = K_layer.Convolution1D(nb_filter=36, filter_length=5, activation='relu', input_shape=(self.timesteps, self.input_dim))
 		# Downsample the output of convolution by 2X.
-		pool1 = MaxPooling1D()
-		conv2 = Convolution1D(nb_filter=16, filter_length=5, activation='relu')
-		pool2 = MaxPooling1D()
-		flat = Flatten()
-		dense = Dense(self.output_dim)
+		pool1 = K_layer.MaxPooling1D()
+		conv2 = K_layer.Convolution1D(nb_filter=16, filter_length=5, activation='relu')
+		pool2 = K_layer.MaxPooling1D()
+		conv3 = K_layer.Convolution1D(nb_filter=8, filter_length=8, activation='relu')
+		pool3 = K_layer.MaxPooling1D()
+		flat = K_layer.Flatten()
+		dense = K_layer.Dense(self.output_dim)
 
-		return conv1, pool1, conv2, pool2, flat, dense
+		return conv1, pool1, conv2, pool2, conv3, pool3, flat, dense
 
 	def make_model(self):
 		self.input_dim = self.input_dim - self.name_dim
 		self.output_dim = self.name_dim
 
-		conv1, pool1, conv2, pool2, flat, dense = __create_conv_encoder()
+		conv1, pool1, conv2, pool2, conv3, pool3, flat, dense = self.__create_conv_encoder()
 		def conv_encoder(seq):
-			return dense(flat(pool2(conv2(pool1(conv1(seq))))))
+			#return dense(flat(pool3(conv3(pool2(conv2(pool1(conv1(seq))))))))
+			return dense(flat(pool1(conv1(seq))))
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		encoded = conv_encoder(inputs)
-		decoded = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))(decoded)
+		decoded = K_layer.Lambda(lambda x: K.tf.nn.softmax(x))(encoded)
 		output = K_layer.RepeatVector(self.timesteps)(decoded)
 
 		self.model = Model(inputs, output)
