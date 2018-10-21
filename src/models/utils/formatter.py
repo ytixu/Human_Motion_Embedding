@@ -14,6 +14,8 @@ def expand_time(model, x):
 				y[:,i,j] = y[:,i,h]
 			else:
 				y[:,i,j] = 0
+			if model.add_noise:
+				y[:,i,j] = y[:,i,j] + np.random.normal(0,model.noise_std,y[:,i,j].shape)
 	y = np.reshape(y, (-1, model.timesteps*len(model.hierarchies), y.shape[-1]))
 	return x, y
 
@@ -32,14 +34,22 @@ def expand_time_vl(model, x):
 		if model.repeat_last and h+1 != model.timesteps:
 			for j in range(i*n,(i+1)*n):
 				new_x[j,h+1:] = new_x[j,h]
+		# TODO: add noise
 	return new_x, new_x
+
+def __pertube(model, data):
+	if model.add_noise:
+		data = np.random.normal(0,model.noise_std,data.shape)
+	else:
+		data[:] = 0
+	return data
 
 def without_name(model, x):
 	'''
 	Return a copy of x without action name
 	'''
 	new_x = np.copy(x)
-	new_x[:,:,-model.name_dim:] = 0
+	__pertube(model, new_x[:,:,-model.name_dim:])
 	return new_x
 
 def without_motion(model, x):
@@ -47,7 +57,7 @@ def without_motion(model, x):
 	Return a copy of x without pose information
 	'''
 	new_x = np.copy(x)
-	new_x[:,:,:-model.name_dim] = 0
+	__pertube(model, new_x[:,:,:-model.name_dim])
 	return new_x
 
 def randomize_name(model, x):
@@ -59,9 +69,9 @@ def randomize_name(model, x):
 	rand_idx = np.random.choice(n, n*2/3, replace=False)
 	n = len(rand_idx)/2
 	# remove name
-	x[rand_idx[n:],:,-model.name_dim:] = 0
+	__pertube(model, x[rand_idx[n:],:,-model.name_dim:])
 	# remove pose
-	x[rand_idx[:n],:,:-model.name_dim] = 0
+	__pertube(model, x[rand_idx[:n],:,:-model.name_dim])
 	return x
 
 EXPAND_NAMES_MODALITIES = ['motion', 'name', 'both']

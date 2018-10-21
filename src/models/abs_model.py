@@ -29,6 +29,11 @@ class AbstractModel:
 		else:
 			self.activation = 'linear'
 
+		self.add_noise = False
+		if args['add_noise']:
+			self.add_noise = True
+			self.noise_std = args['noise_std']
+
 		self.repeat_last = args['repeat_last']
 		self.supervised = args['supervised']
 

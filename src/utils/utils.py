@@ -69,6 +69,7 @@ def recover(x, stats):
 # error
 
 SHORT_TERM_IDX = [1,3,7,9]
+SHORT_N_LONG_TERM_IDX = [1,3,7,9,13,17,19,24]
 
 def l2_error(x1, x2, averaged=True):
 	'''
@@ -139,18 +140,20 @@ def print_score(scores, title, keys, print_title=True, precision='.2'):
 
 	def format_row(name, values, p=precision):
 		s = '{0: <16}'.format(name)
-		for v in values:
-			s = s + (' | %'+p+'f')%(v)
+		for i in SHORT_N_LONG_TERM_IDX:
+			if i < len(values):
+				s = s + (' | %'+p+'f')%(values[i])
+			else:
+				s = s + (' | n/a')
 		return s
 
-	idx = range(1,len(scores[keys[0]]),2)
 	if print_title:
-		print format_row('milliseconds', [40*(i+1) for i in idx], p='.0')
+		print format_row('milliseconds', [40*(i+1) for i in range(SHORT_N_LONG_TERM_IDX[-1]+1)], p='.0')
 	for key in keys:
-		print format_row(key, np.array(scores[key])[idx])
+		print format_row(key, scores[key])
 	# get average
 	avg_score = np.mean(scores.values(), axis=0)
-	print format_row('AVERAGE', avg_score[idx])
+	print format_row('AVERAGE', avg_score)
 
 def print_classification_score(score, actions):
 	N = 8

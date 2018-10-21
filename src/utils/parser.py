@@ -18,7 +18,6 @@ set_session(tf.Session(config=config))
 
 METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN']
 OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN']
-NOISE_VAR = 0.01
 
 # Get data and information on the data
 
@@ -57,7 +56,7 @@ def __data_generator(data_dir, stats, args):
 
 			if args['supervised']:
 				if args['add_noise']:
-					x[:,:,-l:] = np.random.normal(0,NOISE_VAR,x[:,:,-l:].shape)
+					x[:,:,-l:] = np.random.normal(0,args['add_noise'],x[:,:,-l:].shape)
 				x[:,:,-l+args['actions'][action_name]] = 1
 
 			yield x[:100]
@@ -100,7 +99,7 @@ def __data_generator_random(data_dir, stats, args, b):
 				s, e = j*conseq_n, (j+1)*conseq_n
 				x[s:e,:,-l:] = 0
 				if args['add_noise']:
-					x[s:e,:,-l:] = np.random.normal(0,NOISE_VAR,x[s:e,:,-l:].shape)
+					x[s:e,:,-l:] = np.random.normal(0,args['noise_std'],x[s:e,:,-l:].shape)
 				x[s:e,:,-l+args['actions'][action_name]] = 1
 
 		yield x
@@ -134,24 +133,23 @@ def __load_validation_data(data_dir, stats, args):
 
 # Get load and save path
 
-def __format_file_name(a):
-	return '-'.join('-'.join(
-		a.strip(')').split('(')).split(','))
-
 def __get_model_path_name(args, file_type):
 	'''
 	Format name for the log and model file. Name include:
 		directory: 	model name
 					parameterization (e.g.: euler)
 					supervised
-		filename: 	rnn unit (lstm or gru)
 					timesteps
+		filename: 	rnn unit (lstm or gru)
 					latent_dim
 					unit_timesteps
 					loss_func
 					optimizer
+					learning rate
+					decay
 					normalization_method
 					repeat_last
+					add_noise
 					timestamp
 		extension:  .log or .hdf5
 	'''
@@ -164,16 +162,22 @@ def __get_model_path_name(args, file_type):
 		output_name = output_name+'/sup'
 	else:
 		output_name = output_name+'/unsup'
+	output_name = output_name+'/t%d'%(args['timesteps'])
 	output_name = utils.output_dir(output_name)
 
 	unit = 'gru'
 	if args['lstm']:
 		unit = 'lstm'
+	misc = ''
+	if args['repeate_last']:
+		misc = misc + '_repeat_last'
+	if args['add_noise']:
+		misc = misc + '_noise_%f'%args['noise_std']
 
-	opt_name = __format_file_name(args['optimizer'])
-	return'%s/%s_t%d_l%d_u%d_loss-%s_opt-%s_%s_%d.%s'%(
-		output_name, unit, args['timesteps'], args['latent_dim'], args['unit_timesteps'],
-		args['loss_func'], opt_name, args['normalization_method'], time.time(), ext)
+	return'%s/%s_e%d_ut%d_loss-%s_opt-%s_lr%f_d%f_%s%s_%d.%s'%(
+		output_name, unit, args['latent_dim'], args['unit_timesteps'],
+		args['loss_func'], args['optimizer'], args['learning_rate'],
+		args['decay'],args['normalization_method'], misc, time.time(), ext)
 
 def get_parse(mode, method_name=None):
 	ap = argparse.ArgumentParser()
@@ -210,7 +214,7 @@ def get_parse(mode, method_name=None):
 	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-r', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
 	ap.add_argument('--action', required=False, help='Only load data with this action name', nargs = '*')
-	ap.add_argument('--add_noise', required=False, help='Add noise to the action name', nargs = '*')
+	ap.add_argument('--add_noise',required=False, help='Add noise to the action name, indicates the standard deviation for the noise', default=0.0, type=float)
 	ap.add_argument('--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
@@ -222,8 +226,10 @@ def get_parse(mode, method_name=None):
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
 	assert args['timesteps_in']  > 0
 
-	# Parse optimizer
-	args['optimizer'] = 'optimizers.'+args['optimizer']
+	# Noise
+	if args['add_noise'] > 0:
+		args['noise_std'] = args['add_noise']
+		args['add_noise'] = True
 
 	# load some statistics and other information about the data
 	data_types = ['input_data']
@@ -263,6 +269,9 @@ def get_parse(mode, method_name=None):
 			args['do_classification'] = True
 		else:
 			args['do_classification'] = False
+
+	# Parse optimizer
+	args['optimizer'] = 'optimizers.'+args['optimizer']
 
 	# load and output data
 	if mode == 'train':

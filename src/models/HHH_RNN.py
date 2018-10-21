@@ -46,7 +46,7 @@ class HHH_RNN(HH_RNN.HH_RNN):
 			angle = decode_repete_angles(angle)
 			residual = decode_repete(e)
 			residual = decode_residual_2(decode_residual_1(residual))
-			angle = K_layer.Activation(self.activation)(K_layer.add([decode_repete(angle), residual]))
+			angle = K_layer.Activation(self.activation)(K_layer.add([angle, residual]))
 			return angle
 
 		angles = [None]*len(self.sup_hierarchies)

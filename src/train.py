@@ -51,6 +51,7 @@ def __eval_class(model, x, y, args, stats):
 	print y_pred[0][0]
 	if len(y_pred) == 2: # TODO: need better way to detect this
                 std, y_pred = y_pred
+		print y_pred[0][0]
 	return std, utils.classification_error(y_pred, y, stats)
 
 def __combine_prediction_score(score, actions):
@@ -99,6 +100,8 @@ def train(model, data_iter, test_iter, valid_data, args):
 		norm_y = y
 		if y.shape[-1] != len(args['actions']): # TODO
 			norm_y = utils.normalize(y, stats, args['normalization_method'])
+		print norm_y[0][0][-len(args['actions']):]
+		#print yc_valid[0][0]
 		# train
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 		history = model.model.fit(x_train, y_train,
@@ -140,7 +143,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 				mean_std_pred, std_std_pred = np.mean(std), np.std(std)
 				print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
 			__combine_prediction_score(l2_valid, args['actions'])
-			#print 'SHORT-TERM (80-160-320-400ms)', l2_valid[utils.SHORT_TERM_IDX]
+			#print 'SHORT-TERM (80-160-320-400ms)', l2_valid[:,utils.SHORT_TERM_IDX]
 
 		# classification error with validation data
 		if args['do_classification']:
