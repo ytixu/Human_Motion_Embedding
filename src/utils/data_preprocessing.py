@@ -238,7 +238,7 @@ def whitening(to_type='euler'):
 	'''
 	# First 6 values are global rotation and translation, which are also ignored.
 	dimensions_to_ignore = range(6)+list(np.where(data_std < 1e-4)[0])
-	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])[6:]
+	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])
 
 	print 'Used dimensions:', len(dimensions_to_use), dimensions_to_use
 	# For euler and expmap:
