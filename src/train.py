@@ -87,7 +87,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 	if args['do_classification']:
 		xc_valid, yc_valid = model.format_data(valid_data, for_classification=True)
 		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])
-		print xc_valid[0][0]
 
 	iter_n = 1
 	for x in data_iter:
@@ -101,8 +100,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 		norm_y = y
 		if y.shape[-1] != len(args['actions']): # TODO
 			norm_y = utils.normalize(y, stats, args['normalization_method'])
-		print norm_y[0][0][-len(args['actions']):]
-		#print yc_valid[0][0]
 		# train
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(norm_x, norm_y, test_size=CV_SPLIT)
 		history = model.model.fit(x_train, y_train,
