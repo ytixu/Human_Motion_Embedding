@@ -16,8 +16,8 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.8
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN', 'CH_RNN']
-OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN', 'CH_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN']
+OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN']
 
 # Get data and information on the data
 
@@ -179,11 +179,9 @@ def __get_model_path_name(args, file_type):
 		args['loss_func'], args['optimizer'], args['learning_rate'],
 		args['decay'],args['normalization_method'], misc, time.time(), ext)
 
-def get_parse(mode, method_name=None):
+def get_parse(mode):
 	ap = argparse.ArgumentParser()
-	# TODO: adapt to conventional input format
-	if method_name is None:
-		ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
+	ap.add_argument('-m', '--method_name', required=True, help='Method name', choices=METHOD_LIST)
 
 	ap.add_argument('-D', '--input_data', required=False, help='Input data directory', default='../data/h3.6m/euler')
 	# ap.add_argument('-od', '--output_data', required=False, help='Output data directory')
@@ -220,8 +218,6 @@ def get_parse(mode, method_name=None):
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
 
 	args = vars(ap.parse_args())
-	if method_name is not None:
-		args['method_name'] = method_name
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
 	assert args['timesteps_in']  > 0
