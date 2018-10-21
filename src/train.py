@@ -87,6 +87,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 	if args['do_classification']:
 		xc_valid, yc_valid = model.format_data(valid_data, for_classification=True)
 		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])
+		print xc_valid[0][0]
 
 	iter_n = 1
 	for x in data_iter:

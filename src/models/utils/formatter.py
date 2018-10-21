@@ -14,8 +14,8 @@ def expand_time(model, x):
 				y[:,i,j] = y[:,i,h]
 			else:
 				y[:,i,j] = 0
-			if model.add_noise:
-				y[:,i,j] = y[:,i,j] + np.random.normal(0,model.noise_std,y[:,i,j].shape)
+			#if model.add_noise:
+			#	y[:,i,j] = y[:,i,j] + np.random.normal(0,model.noise_std,y[:,i,j].shape)
 	y = np.reshape(y, (-1, model.timesteps*len(model.hierarchies), y.shape[-1]))
 	return x, y
 
@@ -38,10 +38,10 @@ def expand_time_vl(model, x):
 	return new_x, new_x
 
 def __pertube(model, data):
-	if model.add_noise:
-		data = np.random.normal(0,model.noise_std,data.shape)
-	else:
-		data[:] = 0
+	#if model.add_noise:
+	#	data[:] = np.random.normal(0,model.noise_std,data.shape)
+	#else:
+	data[:] = 0
 	return data
 
 def without_name(model, x):
@@ -49,7 +49,7 @@ def without_name(model, x):
 	Return a copy of x without action name
 	'''
 	new_x = np.copy(x)
-	__pertube(model, new_x[:,:,-model.name_dim:])
+	new_x[:,:,-model.name_dim:] = 0
 	return new_x
 
 def without_motion(model, x):
@@ -57,7 +57,7 @@ def without_motion(model, x):
 	Return a copy of x without pose information
 	'''
 	new_x = np.copy(x)
-	__pertube(model, new_x[:,:,:-model.name_dim])
+	new_x[:,:,:-model.name_dim] = 0
 	return new_x
 
 def randomize_name(model, x):
