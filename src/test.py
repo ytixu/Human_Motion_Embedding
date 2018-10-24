@@ -89,8 +89,8 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 			s,e = i*N, (i+1)*N
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
-				'y': (utils.prediction_error(y_pred[s:e],
-						cpl_data[s:e], stats)[pred_n:]).tolist()  # compare motion
+				'y': (utils.prediction_error(y_pred[s:e,:,6:],
+						cpl_data[s:e,:,6:], stats)[pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
 			if args['do_classification']:
@@ -206,8 +206,9 @@ if __name__ == '__main__':
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
 	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	modalities = (model.timesteps_in-1, 74, #model.timesteps-1,
-				  model.timesteps_in-1, 74) #model.timesteps-1)
+	xp_valid[:,:,:6] = 0
+	modalities = (model.timesteps_in-1, model.timesteps-1,
+				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
 	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 

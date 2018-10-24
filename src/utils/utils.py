@@ -76,7 +76,7 @@ def l2_error(x1, x2, averaged=True):
 	This will return one number if dim = 2
 	or will return a list if dim = 3
 	'''
-	s = np.sqrt(np.sum(np.square(x1[:,:,6:] - x2[:,:,6:]), -1))
+	s = np.sqrt(np.sum(np.square(x1 - x2), -1))
 	if averaged:
 		return np.mean(s, 0)
 	else:

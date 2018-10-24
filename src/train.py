@@ -29,7 +29,7 @@ def __eval(model, x, y, args, stats):
 	y_pred = model.autoencode(x)
 	if y_pred.shape[-1] != len(args['actions']): # TODO
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return np.mean(utils.l2_error(y_pred, y))
+	return np.mean(utils.l2_error(y_pred[:,:,6:], y[:,:,6:]))
 
 def __eval_pred(model, x, y, args, stats):
 	'''
@@ -40,7 +40,7 @@ def __eval_pred(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return std, utils.prediction_error(y_pred, y, stats, averaged=False)
+	return std, utils.prediction_error(y_pred[:,:,6:], y[:,:,6:], stats, averaged=False)
 
 def __eval_class(model, x, y, args, stats):
 	'''
@@ -141,6 +141,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 				mean_std_pred, std_std_pred = np.mean(std), np.std(std)
 				print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
 			__combine_prediction_score(l2_valid, args['actions'])
+			l2_valid = np.mean(l2_valid, axis=0).tolist()
 			#print 'SHORT-TERM (80-160-320-400ms)', l2_valid[:,utils.SHORT_TERM_IDX]
 
 		# classification error with validation data
@@ -151,6 +152,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 				mean_std_class, std_std_class = np.mean(std), np.std(std)
 				print 'Classification: MEAN STD, STD STD', mean_std_class, std_std_class
 			utils.print_classification_score(log_valid, args['actions'])
+			log_valid = np.mean(log_valid, axis=0).tolist()
 
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
