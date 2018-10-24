@@ -11,7 +11,7 @@ from sklearn import cross_validation
 
 from utils import parser, utils
 from models.utils import viz_embedding, pattern_matching, embedding_utils, formatter
-import viz_poses
+import viz_2d_poses as viz_poses
 
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
@@ -206,8 +206,8 @@ if __name__ == '__main__':
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
 	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	modalities = (model.timesteps_in-1, 74, #model.timesteps-1,
-				  model.timesteps_in-1, 74) #model.timesteps-1)
+	modalities = (model.timesteps_in-1, model.timesteps-1,
+				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
 	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 

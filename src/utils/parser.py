@@ -169,7 +169,7 @@ def __get_model_path_name(args, file_type):
 	if args['lstm']:
 		unit = 'lstm'
 	misc = ''
-	if args['repeate_last']:
+	if args['repeat_last']:
 		misc = misc + '_repeat_last'
 	if args['add_noise']:
 		misc = misc + '_noise_%f'%args['noise_std']
