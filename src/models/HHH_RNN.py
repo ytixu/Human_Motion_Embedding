@@ -11,10 +11,12 @@ import HH_RNN
 class HHH_RNN(HH_RNN.HH_RNN):
 
 	def make_model(self):
+		self.partial_latent_dim = 100
+
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
+		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
+		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
 		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
 		def encode_partials(seq):
@@ -29,7 +31,7 @@ class HHH_RNN(HH_RNN.HH_RNN):
 
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decode_repeat_units = K_layer.RepeatVector(self.unit_n)
-		decode_units = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=self.activation)
+		decode_units = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
 		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)

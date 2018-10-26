@@ -97,10 +97,10 @@ def prediction_error(y_pred, y_true, stats, averaged=True):
 		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']], stats)
 		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']], stats)
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
-		return l2_error(y_pred[:,:,idx_to_use], y_true[:,:,idx_to_use], averaged)
+		return l2_error(y_pred[:,:,idx_to_use][:,:,6:], y_true[:,:,idx_to_use][:,:,6:], averaged)
 	else:
 		# use the same l2 for euclidean
-		return l2_error(y_pred[:,:,:stats['data_dim']], y_true[:,:,:stats['data_dim']], averaged)
+		return l2_error(y_pred[:,:,6:stats['data_dim']], y_true[:,:,6:stats['data_dim']], averaged)
 
 def softmax(x):
         '''
@@ -129,6 +129,7 @@ def classification_error(y_pred, y_true, stats):
 	if y_pred.shape[-1] > stats['data_dim']:
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
+	#y_pred = softmax(y_pred)
 	return [sckit_log_loss(y_true[i], y_pred[i]) for i in range(y_true.shape[0])]
 
 # pretty print scores

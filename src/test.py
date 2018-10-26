@@ -11,7 +11,7 @@ from sklearn import cross_validation
 
 from utils import parser, utils
 from models.utils import viz_embedding, pattern_matching, embedding_utils, formatter
-import viz_poses
+import viz_2d_poses as viz_poses
 
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
@@ -81,6 +81,7 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	for mode, matched in z_pred.iteritems():
 		z = matched['z']
 		y_pred = model.decode(z)
+		print y_pred[0][0][-model.name_dim:]
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 		z_pred[mode]['y'] = y_pred
 		# iterate action:
@@ -89,8 +90,8 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 			s,e = i*N, (i+1)*N
 			scores[mode][action] = {
 				'z': utils.l2_error(z[s:e], z_gt[s:e]), # compare representation
-				'y': (utils.prediction_error(y_pred[s:e,:,6:],
-						cpl_data[s:e,:,6:], stats)[pred_n:]).tolist()  # compare motion
+				'y': (utils.prediction_error(y_pred[s:e],
+						cpl_data[s:e], stats)[pred_n:]).tolist()  # compare motion
 				}
 			# compare action name
 			if args['do_classification']:
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
 	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	xp_valid[:,:,:6] = 0
+	#xp_valid[:,:,:6] = 0
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
