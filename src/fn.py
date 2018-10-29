@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import cross_validation
 
 from utils import parser, utils
-from model.fn import FN
+from models.fn import FN
 
 LOSS = 10000
 CV_SPLIT = 0.2

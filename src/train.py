@@ -72,7 +72,7 @@ def train(model, data_iter, test_iter, valid_data, args):
 	if args['do_prediction']:
 		xp_valid, yp_valid = model.format_data(valid_data, for_prediction=True)
 		xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-		xp_valid[:,:,-model.name_dim] = 0
+		#xp_valid[:,:,-model.name_dim] = 0
 
 	if args['do_classification']:
 		xc_valid, yc_valid = model.format_data(valid_data, for_classification=True)
@@ -153,13 +153,14 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train')
-	args['output_dir'] = output_dir
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
 
 	model = method_class(args)
+	if args['debug']:
+		__print_model(model)
 	if args['load_path'] != None:
 		print 'Load model ...', args['load_path']
 		model.load(args['load_path'])
