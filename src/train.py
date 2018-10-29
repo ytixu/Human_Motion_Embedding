@@ -9,12 +9,12 @@ LOSS = 1000
 
 SAVE_TO_DISK = True
 
-def __eval_loss(model, history, args):
+def __eval_loss(model, l2_train, l2_test, args):
 	'''
 	Save model only if loss improved.
 	'''
 	global LOSS
-	new_loss = np.mean(history.history['loss'])
+	new_loss = (l2_train + l2_test)/2
 	if new_loss < LOSS:
 		LOSS = new_loss
 		if SAVE_TO_DISK and not args['no_save']:
@@ -53,17 +53,6 @@ def __eval_class(model, x, y, args, stats):
                 std, y_pred = y_pred
 		print y_pred[0][0]
 	return std, utils.classification_error(y_pred, y, stats)
-
-def __combine_prediction_score(score, actions):
-	N = 8
-	n = len(actions)
-	new_s = {}
-	keys = ['']*n
-	for a,i in actions.iteritems():
-		s,e = i*N,(i+1)*N
-		new_s[a] = np.mean(score[s:e], axis=0)
-		keys[i] = a
-	utils.print_score(new_s, 'ADD', keys)
 
 def __print_model(model):
 	model.model.summary()
@@ -109,24 +98,16 @@ def train(model, data_iter, test_iter, valid_data, args):
 					batch_size=args['batch_size'],
 					validation_data=(x_test, y_test))
 
-		new_loss = __eval_loss(model, history, args)
-		# decay
-		if iter_n % args['decay_after'] == 0:
-			model.decay_learning_rate()
-			print 'New learning rate:', model.lr
-
 		# -- EVALUATION --
-		# populate embedding with random training data
-		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
 
-		# process test data
+		# training error
+		rand_idx = np.random.choice(norm_x.shape[0], args['embedding_size'], replace=False)
+		l2_train = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
+
+		# test error
 		x_test = test_iter.next()
 		x_test, y_test = model.format_data(x_test)
 		x_test = utils.normalize(x_test, stats, args['normalization_method'])
-
-		# training error
-		l2_train = __eval(model, norm_x[rand_idx], y[rand_idx], args, stats)
-		# test error
 		l2_test = __eval(model, x_test, y_test, args, stats)
 
 		print 'MEAN TRAIN', l2_train
@@ -135,18 +116,20 @@ def train(model, data_iter, test_iter, valid_data, args):
 		l2_valid, mean_std_pred, std_std_pred, log_valid, mean_std_class, std_std_class = 0,0,0,0,0,0
 		# prediction error with validation data
 		if args['do_prediction']:
+			# populate embedding with random training data
 			model.load_embedding(norm_x[rand_idx], pred_only=True, new=True)
 			std, l2_valid = __eval_pred(model, xp_valid, yp_valid, args, stats)
 			mean_std_pred, std_std_pred = 0, 0
 			if len(std) > 0:
 				mean_std_pred, std_std_pred = np.mean(std), np.std(std)
 				print 'Prediction: MEAN STD, STD STD', mean_std_pred, std_std_pred
-			__combine_prediction_score(l2_valid, args['actions'])
+			utils.print_prediction_score(l2_valid, args['actions'])
 			l2_valid = np.mean(l2_valid, axis=0).tolist()
 			#print 'SHORT-TERM (80-160-320-400ms)', l2_valid[:,utils.SHORT_TERM_IDX]
 
 		# classification error with validation data
 		if args['do_classification']:
+			# populate embedding with random training data
 			model.load_embedding(norm_x[rand_idx], class_only=True, new=True)
 			std, log_valid = __eval_class(model, xc_valid, yc_valid, args, stats)
 			if len(std) > 0:
@@ -154,6 +137,13 @@ def train(model, data_iter, test_iter, valid_data, args):
 				print 'Classification: MEAN STD, STD STD', mean_std_class, std_std_class
 			utils.print_classification_score(log_valid, args['actions'])
 			log_valid = np.mean(log_valid, axis=0).tolist()
+
+		# saving model
+		new_loss = __eval_loss(model, l2_train, l2_test, args)
+		# decay
+		if iter_n % args['decay_after'] == 0:
+			model.decay_learning_rate()
+			print 'New learning rate:', model.lr
 
 		if SAVE_TO_DISK:
 			with open(args['log_path'], 'a+') as f:
@@ -163,14 +153,13 @@ def train(model, data_iter, test_iter, valid_data, args):
 
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('train')
+	args['output_dir'] = output_dir
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
 	method_class = getattr(getattr(module, args['method_name']), args['method_name'])
 
 	model = method_class(args)
-	if args['debug']:
-		__print_model(model)
 	if args['load_path'] != None:
 		print 'Load model ...', args['load_path']
 		model.load(args['load_path'])

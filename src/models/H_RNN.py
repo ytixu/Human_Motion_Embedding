@@ -67,7 +67,7 @@ class H_RNN(abs_model.AbstractModel):
 	# overrides
 	def encode(self, x, modality=-1):
 		z = self.encoder.predict(x)
-		if modality > 0:
+		if modality != -1:
 			return z[:,modality]
 		return z
 

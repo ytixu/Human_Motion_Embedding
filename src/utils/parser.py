@@ -270,9 +270,10 @@ def get_parse(mode):
 	args['optimizer'] = 'optimizers.'+args['optimizer']
 
 	# load and output data
+
 	if mode == 'train':
-		# make output path
 		if not args['debug']:
+			# make output path
 			if args[ 'save_path'] is None:
 				args['save_path'] = __get_model_path_name(args, 'save')
 			if args['log_path'] is None:
@@ -289,6 +290,12 @@ def get_parse(mode):
 				args['input_data_stats'], args))
 
 	assert(args['load_path'] is not None)
+
+	if mode == 'fn':
+		if not args['debug']:
+			args['save_path'] = args['load_path'].trim('.htf5')
+			args['log_path'] = args['save_path']+'_fn.log'
+			args['save_path'] = args['log_path']+'_fn.htf5'
 
 	data_iter = None
 	if args['random_embedding']:

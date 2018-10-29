@@ -101,8 +101,11 @@ class HH_RNN(abs_model.AbstractModel):
 	# override
 	def encode(self, x, modality=-1):
 		z = self.encoder.predict(x)
-		if modality > 0:
+		if type(modality) == int and modality > 0:
 			return z[:,self.__get_sup_index(modality)]
+		elif type(modality) == type([]):
+			modality = [self.__get_sup_index(m) for m in modality]
+			return z[:, modality]
 		return z
 
 	def predict(self, x, **kwargs):
