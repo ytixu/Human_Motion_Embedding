@@ -3,14 +3,14 @@ import time
 from keras.layers import Input, Dense
 from keras.models import Model
 from sklearn import cross_validation
-from keras.optimizers import Nadam as OptAlgo
+from keras import optimizers
 import keras.backend as K_backend
 
 class Forward_NN:
 
 	def __init__(self, args):
 		self.batch_size = args['batch_size']
-		self.epochs = args['epochs']
+		self.epochs = 5
 		self.embedding_dim = args['latent_dim']
 
 		self.lr = args['learning_rate']
@@ -23,11 +23,11 @@ class Forward_NN:
 
 
 	def make_model(self):
-		inputs = Input(shape=(self.input_dim,))
+		inputs = Input(shape=(self.embedding_dim,))
 		#d1 = Dense(self.interim_dim, activation='relu')(inputs)
 		#d2 = Dense(self.interim_dim, activation='relu')(d1)
 		#d3 = Dense(self.interim_dim, activation='relu')(d2)
-		outputs = Dense(self.output_dim, activation='tanh')(inputs)
+		outputs = Dense(self.embedding_dim, activation='tanh')(inputs)
 
 		# def mse(yTrue, yPred):
 		# 	return K_backend.mean(K_backend.sqrt(K_backend.sum(K_backend.square(yTrue - yPred), axis=0)))

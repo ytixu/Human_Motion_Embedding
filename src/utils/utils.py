@@ -171,7 +171,7 @@ def print_prediction_score(score, actions):
 		s,e = i*N,(i+1)*N
 		new_s[a] = np.mean(score[s:e], axis=0)
 		keys[i] = a
-	utils.print_score(new_s, 'ADD', keys)
+	print_score(new_s, 'ADD', keys)
 
 
 if __name__ == '__main__':

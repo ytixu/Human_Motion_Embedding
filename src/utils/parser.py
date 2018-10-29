@@ -217,6 +217,8 @@ def get_parse(mode):
 	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
 
+	ap.add_argument('--do_classification', action='store_true', help='Train for classification (when using fn.py)')
+
 	args = vars(ap.parse_args())
 
 	args['timesteps_in'] = args['timesteps'] - args['timesteps_out']
@@ -256,15 +258,19 @@ def get_parse(mode):
 			args['actions'] = {a:i for i,a in enumerate(sorted_actions)}
 
 	# model can do prediction and classification?
-	if args['method_name'] == 'C_RNN':
-		args['do_classification'] = True
-		args['do_prediction'] = False
+	if mode == 'fn':
+		if not args['do_classification']:
+			args['do_prediction'] = True
 	else:
-		args['do_prediction'] = True
-		if args['supervised'] and args['method_name'] in OUR_METHODS:
+		if args['method_name'] == 'C_RNN':
 			args['do_classification'] = True
+			args['do_prediction'] = False
 		else:
-			args['do_classification'] = False
+			args['do_prediction'] = True
+			if args['supervised'] and args['method_name'] in OUR_METHODS:
+				args['do_classification'] = True
+			else:
+				args['do_classification'] = False
 
 	# Parse optimizer
 	args['optimizer'] = 'optimizers.'+args['optimizer']

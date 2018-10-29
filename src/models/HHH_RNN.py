@@ -11,7 +11,7 @@ import HH_RNN
 class HHH_RNN(HH_RNN.HH_RNN):
 
 	def make_model(self):
-		self.partial_latent_dim = 100
+		self.partial_latent_dim = self.latent_dim/2
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
