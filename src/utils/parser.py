@@ -279,7 +279,16 @@ def get_parse(mode):
 			if args['log_path'] is None:
 				args['log_path'] = __get_model_path_name(args, 'log')
 
+	else:
+		assert(args['load_path'] is not None)
 
+	if mode == 'fn':
+		if not args['debug']:
+			args['save_path'] = args['load_path'].trim('.htf5')
+			args['log_path'] = args['save_path']+'_fn.log'
+			args['save_path'] = args['log_path']+'_fn.htf5'
+
+	if mode in ['fn', 'train']:
 		# TODO: add output_data
 		return (args,
 			__data_generator_random(args['input_data']+'/train/',
@@ -288,14 +297,6 @@ def get_parse(mode):
 				args['input_data_stats'], args, args['test_size']),
 			__load_validation_data(args['input_data'],
 				args['input_data_stats'], args))
-
-	assert(args['load_path'] is not None)
-
-	if mode == 'fn':
-		if not args['debug']:
-			args['save_path'] = args['load_path'].trim('.htf5')
-			args['log_path'] = args['save_path']+'_fn.log'
-			args['save_path'] = args['log_path']+'_fn.htf5'
 
 	data_iter = None
 	if args['random_embedding']:
