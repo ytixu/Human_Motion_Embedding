@@ -29,7 +29,7 @@ def __eval(model, x, y, args, stats):
 	y_pred = model.autoencode(x)
 	if y_pred.shape[-1] != len(args['actions']): # TODO
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return np.mean(utils.l2_error(y_pred[:,:,6:], y[:,:,6:]))
+	return np.mean(utils.l2_error(y_pred, y))
 
 def __eval_pred(model, x, y, args, stats):
 	'''
@@ -40,7 +40,7 @@ def __eval_pred(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	return std, utils.prediction_error(y_pred[:,:,6:], y[:,:,6:], stats, averaged=False)
+	return std, utils.prediction_error(y_pred, y, stats, averaged=False)
 
 def __eval_class(model, x, y, args, stats):
 	'''

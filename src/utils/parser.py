@@ -261,6 +261,8 @@ def get_parse(mode):
 	if mode == 'fn':
 		if not args['do_classification']:
 			args['do_prediction'] = True
+		else:
+			args['do_prediction'] = False
 	else:
 		if args['method_name'] == 'C_RNN':
 			args['do_classification'] = True
