@@ -91,7 +91,8 @@ def __convert_expmap2euler(x, stats):
 	return x_euler
 
 def prediction_error(y_pred, y_true, stats, averaged=True):
-	n = 0
+	n = 6 if stats['ignore_global'] else 0
+
 	if stats['parameterization'] == 'expmap':
 		# similar to
 		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203

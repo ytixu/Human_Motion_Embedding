@@ -458,8 +458,7 @@ def animate(xyz):
   ax = plt.gca(projection='3d')
   ob = viz.Ax3DPose(ax)
 
-  # modify this to increase the number of frames to animate
-  for i in range(min(150, xyz.shape[0])):
+  for i in range(xyz.shape[0]):
     ob.update( xyz[i,:] )
     plt.show(block=False)
     fig.canvas.draw()

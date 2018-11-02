@@ -141,7 +141,7 @@ def load_validation(path_to_dataset, actions):
 	for k, data_sequences in load_data(path_to_dataset, TEST_SUBJECT_ID, actions, readCSVasFloat_for_validation):
 		yield k, data_sequences[:,:50], data_sequences[:,50:]
 
-def convert(to_type='euler', vis=False):
+def convert(to_type, actions, vis, validation_only):
 	'''
 	Converting and saving the data in euler, euclidean or exmponential map
 	'''
@@ -167,20 +167,21 @@ def convert(to_type='euler', vis=False):
 		utils.create_dir(directory+'/test/')
 		utils.create_dir(directory+'/valid/')
 
-	#training set and test set
-	train_set = load_data(from_directory, TRAIN_SUBJECT_ID, ACTIONS)
-	test_set = load_data(from_directory, TEST_SUBJECT_ID,  ACTIONS)
-	for data_name, data_set in [('train',train_set), ('test',test_set)]:
-		for k, x in data_set:
-			print 'save', k, x.shape
-			subject, action, subact = k
-			data = convert_to_type(x)
-			print data.shape
-			if not vis:
-				np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
+	if not validation_only:
+		#training set and test set
+		train_set = load_data(from_directory, TRAIN_SUBJECT_ID, actions)
+		test_set = load_data(from_directory, TEST_SUBJECT_ID,  actions)
+		for data_name, data_set in [('train',train_set), ('test',test_set)]:
+			for k, x in data_set:
+				print 'save', k, x.shape
+				subject, action, subact = k
+				data = convert_to_type(x)
+				print data.shape
+				if not vis:
+					np.save(directory+'/%s/%s_%d_%d.npy'%(data_name, action, subject, subact), data)
 
 	#validation for motion prediction
-	valid_set = load_validation(from_directory,  ACTIONS)
+	valid_set = load_validation(from_directory,  actions)
 	for k, cond, gt in valid_set:
 		subject, action, subact = k
 		for data_name, x in [('cond',cond), ('gt',gt)]:
@@ -208,7 +209,7 @@ def __get_data(files):
 			data = np.concatenate([np.load(f), data], axis = 0)
 	return data
 
-def whitening(to_type='euler'):
+def whitening(to_type, actions):
 	'''
 	Similar to https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/data_utils.py#L302
 	"""
@@ -255,7 +256,7 @@ def whitening(to_type='euler'):
 			'data_max':np.max(data, axis=0).tolist(),
 			'data_min':np.min(data, axis=0).tolist(),
 			 # this is added for convenience
-			'action_list':{a:i for i,a in enumerate(ACTIONS)}
+			'action_list':{a:i for i,a in enumerate(actions)}
 		}, param_file)
 
 
@@ -339,13 +340,24 @@ if __name__ == '__main__':
 	list_of_type = ['euler', 'euclidean', 'expmap']
 	ap.add_argument('-t', '--type', required=False, help='Choice of parameterization', default='euler', choices=list_of_type)
 	ap.add_argument('-v', '--visualize', action='store_true', help='Visualize the data only')
-	ap.add_argument('-b', '--baseline', action='store_true', help='Generate baseline results only')
+	ap.add_argument('-V', '--visualize_validation', action='store_true', help='Visualize the validation data')
+	ap.add_argument('--action', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('-b', '--baseline', action='store_true', help='Generate baseline results only (for all actions)')
 
 	args = vars(ap.parse_args())
 
 	if args['baseline']:
 		get_baseline(args['type'])
+
 	else:
-		convert(args['type'], args['visualize'])
+		if args['action'] is None:
+			args['action'] = ACTIONS
+		else:
+			args['action'] = list((set(ACTIONS)).intersection(set(args['action'])))
+
+		if args['visualize_validation']:
+			args['visualize'] = True
+
+		convert(args['type'], args['action'], args['visualize'], args['visualize_validation'])
 		if not args['visualize']:
-			whitening(args['type'])
+			whitening(args['type'], args['action'])
