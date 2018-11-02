@@ -91,16 +91,17 @@ def __convert_expmap2euler(x, stats):
 	return x_euler
 
 def prediction_error(y_pred, y_true, stats, averaged=True):
+	n = 0
 	if stats['parameterization'] == 'expmap':
 		# similar to
 		# https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/translate.py#L203
 		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']], stats)
 		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']], stats)
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
-		return l2_error(y_pred[:,:,idx_to_use][:,:,6:], y_true[:,:,idx_to_use][:,:,6:], averaged)
+		return l2_error(y_pred[:,:,idx_to_use][:,:,n:], y_true[:,:,idx_to_use][:,:,n:], averaged)
 	else:
 		# use the same l2 for euclidean
-		return l2_error(y_pred[:,:,6:stats['data_dim']], y_true[:,:,6:stats['data_dim']], averaged)
+		return l2_error(y_pred[:,:,n:stats['data_dim']], y_true[:,:,n:stats['data_dim']], averaged)
 
 def softmax(x):
         '''

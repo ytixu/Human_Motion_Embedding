@@ -218,6 +218,7 @@ def get_parse(mode):
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
 
 	ap.add_argument('--do_classification', action='store_true', help='Train for classification (when using fn.py)')
+	ap.add_argument('--ignore_global', action='store_true', help='Ignore global features')
 
 	args = vars(ap.parse_args())
 
@@ -244,6 +245,10 @@ def get_parse(mode):
 			'orig_data_dim': len(stats['data_mean']),
 			'parameterization': os.path.basename(args[t])
 		}
+
+		if args['ignore_global']:
+			args[ts]['dim_to_use'] = args[ts]['dim_to_use'][6:]
+			args[ts]['data_dim'] = args[ts]['data_dim'] - 6
 
 		assert args[ts]['parameterization'] == 'euler' or args['normalization_method'] != 'norm_pi'
 
@@ -292,7 +297,7 @@ def get_parse(mode):
 
 	if mode == 'fn':
 		if not args['debug']:
-			args['save_path'] = args['load_path'].trim('.htf5')
+			args['save_path'] = args['load_path'].strip('.htf5')
 			args['log_path'] = args['save_path']+'_fn.log'
 			args['save_path'] = args['log_path']+'_fn.htf5'
 

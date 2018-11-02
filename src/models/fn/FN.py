@@ -18,6 +18,8 @@ class Forward_NN:
 		self.loss_func = args['loss_func']
 		self.opt = eval(args['optimizer'])
 
+		self.interim_dim = self.embedding_dim
+
 		self.model = None
 		self.make_model()
 

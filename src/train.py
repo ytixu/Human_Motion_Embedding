@@ -48,10 +48,9 @@ def __eval_class(model, x, y, args, stats):
 	'''
 	std = []
 	y_pred = model.classify(x, return_std=True)
-	print y_pred[0][0]
 	if len(y_pred) == 2: # TODO: need better way to detect this
                 std, y_pred = y_pred
-		print y_pred[0][0]
+		print y_pred[0][0], y[0][0]
 	return std, utils.classification_error(y_pred, y, stats)
 
 def __print_model(model):
