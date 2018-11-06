@@ -16,7 +16,7 @@ import viz_2d_poses as viz_poses
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
 	for x in data_iter:
-		if args['ignore_name']:
+		if 'ignore_name' in kwargs and kwargs['ignore_name']:
 			x[:,:,-model.name_dim:] = 0
 		x = utils.normalize(x, stats, args['normalization_method'])
 		model.load_embedding(x, **kwargs)
@@ -194,7 +194,6 @@ if __name__ == '__main__':
 
 	print 'Load embedding ...'
 	data_iter, data_iter_ = tee(data_iter)
-	args['ignore_name'] = False
 	__load_embeddding(model, data_iter_, args)
 
 	print 'Computing PCA ...'
@@ -223,10 +222,9 @@ if __name__ == '__main__':
 		# load different embedding
 		print 'Load embedding ...'
 		model.reset_embedding()
-        	data_iter, data_iter_ = tee(data_iter)
-		args['ignore_name'] = True
-	        __load_embeddding(model, data_iter_, args)
-		args['ignore_name'] = False
+		data_iter, data_iter_ = tee(data_iter)
+		kwargs = {'ignore_name': True}
+		__load_embeddding(model, data_iter_, args, **kwargs)
 
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
@@ -239,11 +237,12 @@ if __name__ == '__main__':
 		kwargs = {'class_only': True}
 		__load_embeddding(model, data_iter, args, **kwargs)
 
-		print 'Compare pattern matching methods for classification'
+		print 'Compare pattern matching methods for classification (motion->name)'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification)'
 		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
 		__compare_pattern_matching(xc_valid, names_valid, model, modalities, args)
 
+		print 'Compare pattern matching methods for classification (motion->both)'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
 		__compare_pattern_matching(xc_valid, valid_data, model, modalities, args)
