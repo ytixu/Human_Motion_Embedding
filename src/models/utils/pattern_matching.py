@@ -17,7 +17,7 @@ def iter_methods():
 	return ['add'] #, 'mean', 'closest', 'closest_partial']
 
 def iter_distance():
-	return ['l2', 'l1', 'cos']
+	return ['l2'] #, 'l1', 'cos']
 
 def __distance__(e1, e2, dist_method=MAD):
 	if dist_method == MSD:
@@ -186,7 +186,7 @@ def batch_all_match(model, sample_zs, modalities):
 		# select distance function
 		for dist, dist_name in enumerate(iter_distance()):
 			#TODO: remove this
-			if dist_name in ['l2','cos']: continue
+			#if dist_name in ['l2','cos']: continue
 
 			weights, w_i = get_weights(modality_complete, sample_zs[i], dist_method=dist)
 			kwargs['dist_method'] = dist
@@ -198,7 +198,7 @@ def batch_all_match(model, sample_zs, modalities):
 				kwargs['method'] = method+1
 
 				if method+1 == MEAN:
-					for n in [5,50]:
+					for n in [50]: # [5,50,100,500,1000]:
 						kwargs['n'] = n
 						mth_name_ = mth_name+'-'+str(n)
 						z_matched = match(sample_zs[i], model, **kwargs)

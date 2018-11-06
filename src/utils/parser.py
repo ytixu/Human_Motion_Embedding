@@ -250,6 +250,8 @@ def get_parse(mode):
 			args[ts]['dim_to_use'] = args[ts]['dim_to_use'][6:]
 			args[ts]['data_dim'] = args[ts]['data_dim'] - 6
 			args[ts]['ignore_global'] = True
+		else:
+			args[ts]['ignore_global'] = False
 
 		assert args[ts]['parameterization'] == 'euler' or args['normalization_method'] != 'norm_pi'
 

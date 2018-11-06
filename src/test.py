@@ -16,6 +16,8 @@ import viz_2d_poses as viz_poses
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
 	for x in data_iter:
+		if args['ignore_name']:
+			x[:,:,-model.name_dim:] = 0
 		x = utils.normalize(x, stats, args['normalization_method'])
 		model.load_embedding(x, **kwargs)
 		if args['random_embedding']:
@@ -81,7 +83,6 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	for mode, matched in z_pred.iteritems():
 		z = matched['z']
 		y_pred = model.decode(z)
-		print y_pred[0][0][-model.name_dim:]
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 		z_pred[mode]['y'] = y_pred
 		# iterate action:
@@ -99,7 +100,6 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 					y_pred[s:e], cpl_data[s:e], stats))
 
 	modes = sorted(z_pred.keys())
-	print modes
 	for mode in z_pred:
 		z_pred[mode]['y'] = z_pred[mode]['y'][:,pred_n:].tolist()
 		z_pred[mode]['z'] = z_pred[mode]['z'][:,pred_n:].tolist()
@@ -194,6 +194,7 @@ if __name__ == '__main__':
 
 	print 'Load embedding ...'
 	data_iter, data_iter_ = tee(data_iter)
+	args['ignore_name'] = False
 	__load_embeddding(model, data_iter_, args)
 
 	print 'Computing PCA ...'
@@ -207,7 +208,6 @@ if __name__ == '__main__':
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
 	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	#xp_valid[:,:,:6] = 0
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
@@ -220,11 +220,20 @@ if __name__ == '__main__':
 		xp_valid_unamed,_ = model.format_data(xc_valid, for_prediction=True)
 		names_valid = formatter.without_motion(model, valid_data)
 
+		# load different embedding
+		print 'Load embedding ...'
+		model.reset_embedding()
+        	data_iter, data_iter_ = tee(data_iter)
+		args['ignore_name'] = True
+	        __load_embeddding(model, data_iter_, args)
+		args['ignore_name'] = False
+
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
 		__compare_pattern_matching(xp_valid_unamed, valid_data, model, modalities, args)
 
 		# load different embedding
+		print 'Load embedding ...'
 		# data_iter, data_iter_ = tee(data_iter)
 		model.reset_embedding()
 		kwargs = {'class_only': True}

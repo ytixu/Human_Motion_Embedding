@@ -71,7 +71,6 @@ def train(model, data_iter, test_iter, valid_data, args):
 	if args['do_prediction']:
 		xp_valid, yp_valid = model.format_data(valid_data, for_prediction=True)
 		xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-		#xp_valid[:,:,-model.name_dim] = 0
 
 	if args['do_classification']:
 		xc_valid, yc_valid = model.format_data(valid_data, for_classification=True)

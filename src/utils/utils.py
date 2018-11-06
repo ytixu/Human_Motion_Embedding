@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from sklearn.metrics import log_loss as sckit_log_loss
+#from sklearn.metrics import log_loss as sckit_log_loss
 
 import converter
 
@@ -91,7 +91,7 @@ def __convert_expmap2euler(x, stats):
 	return x_euler
 
 def prediction_error(y_pred, y_true, stats, averaged=True):
-	n = 6 if stats['ignore_global'] else 0
+	n = 0 if stats['ignore_global'] else 6
 
 	if stats['parameterization'] == 'expmap':
 		# similar to
@@ -132,8 +132,8 @@ def classification_error(y_pred, y_true, stats):
 		y_pred = y_pred[:,:,stats['data_dim']:]
 		y_true = y_true[:,:,stats['data_dim']:]
 	y_pred = softmax(y_pred)
-	print y_pred[0][-1]
-	return [sckit_log_loss(y_true[i][-1:], y_pred[i][-1:]) for i in range(y_true.shape[0])]
+	#print np.array([sckit_log_loss(y_true[i][-1:], y_pred[i][-1:]) for i in range(y_true.shape[0])]).shape
+	return np.mean(np.sum(y_pred*y_true, axis=-1), axis=1)
 
 # pretty print scores
 def print_score(scores, title, keys, print_title=True, precision='.2'):
