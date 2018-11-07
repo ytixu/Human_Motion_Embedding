@@ -9,66 +9,70 @@ from utils import pattern_matching, embedding_utils, formatter
 import HH_RNN
 
 class SH_RNN(HH_RNN.HH_RNN):
-	# seperate name from motion
+	# 3 layers
 	def __init__(self, args):
 		assert args['supervised']
+
+		self.sub_unit = 5
+		self.partial_latent_dim = args['latent_dim']/2
+		self.sub_partial_latent_dim = args['latent_dim']/4
 
 		return super(SH_RNN, self).__init__(args)
 
 	def make_model(self):
-		self.partial_latent_dim = self.latent_dim
+		assert self.sub_unit**2 = self.unit_t
 
-		# encoder
+		# ENCODER
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		name_slice = K_layer.Lambda(lambda x: x[:,:,:,-self.name_dim:], output_shape=(self.unit_n, self.unit_t, self.name_dim))(reshaped)
-		motion_slice = K_layer.Lambda(lambda x: x[:,:,:,:-self.name_dim], output_shape=(self.unit_n, self.unit_t, self.input_dim-self.name_dim))(reshaped)
 
-		encode_name = abs_model.RNN_UNIT(self.partial_latent_dim)
-		encode_motion = abs_model.RNN_UNIT(self.partial_latent_dim)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
-		encode_global = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
+		reshaped_to_sub_units = K_layer.Reshape((self.sub_unit, self.sub_unit, self.input_dim))
+		encode_reshape_1 = K_layer.Reshape((self.sub_unit, self.sub_partial_latent_dim))
+		encode_reshape_2 = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
+		encode_1 = abs_model.RNN_UNIT(self.sub_partial_latent_dim)
+		encode_2 = abs_model.RNN_UNIT(self.partial_latent_dim)
+		encode_3 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
 
-		def encode_partials(seq, encoder, shape):
-			partial = [None]*self.unit_n
+		def encode_partials(seq, encoder_layer, reshape_layer_1, reshape_layer_2=None):
+			encoded = [None]*self.unit_n
 			for i in range(self.unit_n):
-				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, shape))(seq)
-				partial[i] = encoder(rs)
-			partial = encode_reshape(K_layer.concatenate(partial, axis=1))
-			return encode_global(partial)
+				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.input_dim))(seq)
+				if reshape_layer is not None:
+					rs = reshape_layer(rs)
+				else:
+					rs = encode_partials(rs, encode_1, encode_reshape_1, reshaped_to_sub_units)
+				encoded[i] = encoder_layer(rs)
+			return reshape_layer_1(K_layer.concatenate(encoded, axis=1))
 
-		encoded_name = encode_partials(name_slice, encode_name, self.name_dim)
-		encoded_motion = encode_partials(motion_slice, encode_motion, self.input_dim-self.name_dim)
-		encoded = K_layer.add([encoded_name, encoded_motion])
-		#encoded = encode_global(encoded)
+		encoded = encode_partials(reshaped, encode_2, encode_reshape_2)
+		encoded = encode_3(encoded)
 
-		# decoder
+
+		# DECODER
 		z = K_layer.Input(shape=(self.latent_dim,))
 		decode_repeat_units = K_layer.RepeatVector(self.unit_n)
-		decode_units = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
+		decode_repeat_elements = K_layer.Lambda(lambda x: K_backend.repeat_elements(x, rep=self.sub_unit, axis=1), output_shape=(self.unit_n*self.sub_unit, self.partial_latent_dim))
+		decode_units_1 = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
+		decode_units_2 = abs_model.RNN_UNIT(self.sub_partial_latent_dim, return_sequences=True, activation=self.activation)
 
-		#decode_name_1 = K_layer.Dense(128, activation=self.activation)
-		decode_name_2 = K_layer.Dense(self.name_dim, activation=self.activation)
-		#decode_motion_1 = K_layer.Dense(236, activation=self.activation)
-		decode_motion_2 = K_layer.Dense(self.output_dim-self.name_dim, activation=self.activation)
-		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
+		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
+		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
+		decode_repete_dense = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.sub_unit, 1), output_shape=(self.timesteps, self.output_dim))
 
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(512, return_sequences=True, activation=self.activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
-			units = decode_units(decode_repeat_units(e))
-			#name = K_layer.TimeDistributed(decode_name_1)(units)
-			name = K_layer.TimeDistributed(decode_name_2)(units)
-			motion = K_layer.TimeDistributed(decode_motion_2)(units)
-			#motion = K_layer.TimeDistributed(decode_motion_2)(motion)
-			seq = decode_repete_angles(K_layer.concatenate([motion, name], axis=-1))
-
+			res = decode_units_1(decode_repeat_units(e))
+			res = decode_repeat_elements(res)
+			res = K_layer.TimeDistributed(decode_euler_1)(res)
+			res = K_layer.TimeDistributed(decode_euler_2)(res)
+			res = decode_repete_dense(res)
 			residual = decode_repete(e)
 			residual = decode_residual_2(decode_residual_1(residual))
-			seq = K_layer.Activation(self.activation)(K_layer.add([seq, residual]))
-			return seq
+			res = K_layer.Activation(self.activation)(K_layer.add([res, residual]))
+			return res
 
 		angles = [None]*len(self.sup_hierarchies)
 		for i,k in enumerate(self.sup_hierarchies):
