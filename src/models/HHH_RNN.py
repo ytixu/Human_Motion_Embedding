@@ -11,16 +11,13 @@ import HH_RNN
 class HHH_RNN(HH_RNN.HH_RNN):
 
 	def make_model(self):
-		self.partial_latent_dim = 128 # self.latent_dim/2
+		self.partial_latent_dim = self.latent_dim/2
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
 		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
 		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
 		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
-
-		#encode_1 = K_layer.Dense(self.partial_latent_dim)
-		#encode_flatten = K_layer.Flatten()
 
 		def encode_partials(seq):
 			encoded = [None]*self.unit_n

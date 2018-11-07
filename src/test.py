@@ -16,6 +16,7 @@ import viz_2d_poses as viz_poses
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
 	for x in data_iter:
+		#x[:,:,:6] = 0
 		if 'ignore_name' in kwargs and kwargs['ignore_name']:
 			x[:,:,-model.name_dim:] = 0
 		x = utils.normalize(x, stats, args['normalization_method'])
@@ -203,6 +204,8 @@ if __name__ == '__main__':
 	print 'Test interpolaton ...'
 	args['output_dir'] = output_dir + '_interpolation'
 	#__interpolate(model, stats, args)
+
+	#valid_data[:,:,:6] = 0
 
 	print 'Comparing pattern matching methods for prediction'
 	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
