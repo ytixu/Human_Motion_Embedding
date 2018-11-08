@@ -20,7 +20,7 @@ class HH_RNN(abs_model.AbstractModel):
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps/self.unit_t
-		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
+		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
 
 		return super(HH_RNN, self).__init__(args)
 
@@ -68,7 +68,7 @@ class HH_RNN(abs_model.AbstractModel):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
-	def __get_sup_index(self, i):
+	def _get_sup_index(self, i):
 		return (i+1)/self.unit_t-1
 
 	def load_embedding(self, data, **kwargs):
@@ -77,7 +77,7 @@ class HH_RNN(abs_model.AbstractModel):
 		if m == embedding_utils.TIME_MODALITIES:
 			zs = self.encoder.predict(data)
 			for i in sets:
-				z_i = self.__get_sup_index(i)
+				z_i = self._get_sup_index(i)
 				if i not in self.embedding:
 					self.embedding[i] = zs[:,z_i]
 				else:
@@ -102,9 +102,9 @@ class HH_RNN(abs_model.AbstractModel):
 	def encode(self, x, modality=-1):
 		z = self.encoder.predict(x)
 		if type(modality) == int and modality > 0:
-			return z[:,self.__get_sup_index(modality)]
+			return z[:,self._get_sup_index(modality)]
 		elif type(modality) == type([]):
-			modality = [self.__get_sup_index(m) for m in modality]
+			modality = [self._get_sup_index(m) for m in modality]
 			return z[:, modality]
 		return z
 

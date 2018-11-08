@@ -300,9 +300,9 @@ def get_parse(mode):
 
 	if mode == 'fn':
 		if not args['debug']:
-			args['save_path'] = args['load_path'].strip('.htf5')
+			args['save_path'] = '../' + args['load_path'].strip('.hdf5')
 			args['log_path'] = args['save_path']+'_fn.log'
-			args['save_path'] = args['log_path']+'_fn.htf5'
+			args['save_path'] = args['save_path']+'_fn.hdf5'
 
 	if mode in ['fn', 'train']:
 		# TODO: add output_data

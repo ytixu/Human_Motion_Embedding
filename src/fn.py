@@ -1,8 +1,13 @@
+import matplotlib
+matplotlib.use('Agg')
+
 import numpy as np
 from sklearn import cross_validation
+import csv
 
 from utils import parser, utils
 from models.fn import FN
+import viz_2d_poses as viz_poses
 
 LOSS = 10000
 CV_SPLIT = 0.2
@@ -31,9 +36,10 @@ def __eval_loss(fn_model, l2_train, l2_test, args):
 	if new_loss < LOSS:
 		print 'Saved model - ', LOSS
 		LOSS = new_loss
-		if not args['debug']:
-			fn_model.model.save_weights(args['save_path'], overwrite=True)
+		#if not args['debug']:
+			#fn_model.model.save_weights(args['save_path'], overwrite=True)
 		FAIL_COUNT = 0
+		return True
 	elif FAIL_COUNT > 3:
 		fn_model.decay_learning_rate()
 	 	print 'new learning rate', fn_model.lr
@@ -41,6 +47,8 @@ def __eval_loss(fn_model, l2_train, l2_test, args):
 	else:
 		FAIL_COUNT += 1
 		print FAIL_COUNT, 'failed'
+
+	return False
 
 def __eval(fn_model, x, y, args, stats):
 	x_pred = fn_model.predict(x)
@@ -50,7 +58,7 @@ def __eval(fn_model, x, y, args, stats):
 def __eval_decoded(model, fn_model, x, y, args, stats):
 	x_pred = fn_model.predict(x)
 	x_pred = model.decode(x_pred)
-	x_pred =utils.unormalize(x_pred, stats, args['normalization_method'])
+	x_pred = utils.unormalize(x_pred, stats, args['normalization_method'])
 	err = None
 
 	if args['do_prediction']:
@@ -60,7 +68,16 @@ def __eval_decoded(model, fn_model, x, y, args, stats):
 		err = utils.classification_error(x_pred[:,:,-model.name_dim:], y, stats)
 		utils.print_classification_score(err, args['actions'])
 
-	return np.mean(err)
+	return np.mean(err), x_pred
+
+def __plot_sequence(model, y_true, y_pred, stats, args):
+	titles = ['GT', 'predicted']
+	kwargs = {'row_titles':titles,
+		'parameterization':stats['parameterization'],
+		'title':'FN'
+	}
+	x = np.concatenate([y_true[0], y_pred[0,model.timesteps_in:]], axis=0).reshape((2, y_true.shape[1], -1))
+	viz_poses.plot_batch(x, stats, args, **kwargs)
 
 
 def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
@@ -109,19 +126,22 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 		print 'MEAN TEST', l2_test
 
 		# validation error
-		l2_valid = __eval_decoded(model, fn_model, x_valid, y_valid, args, stats)
+		l2_valid, y_pred = __eval_decoded(model, fn_model, x_valid, y_valid, args, stats)
 
 		# saving fn model
-		__eval_loss(fn_model, l2_train, l2_test, args)
+		if __eval_loss(fn_model, l2_train, l2_test, args):
+			if args['do_prediction']:
+				__plot_sequence(model, y_valid, y_pred, stats, args)
 
-		if not args['debug']:
-			with open(args['log_path'], 'a+') as f:
-			 	spamwriter = csv.writer(f)
-				spamwriter.writerow([new_loss, l2_train, l2_test, l2_valid])
+		#if not args['debug']:
+		#	with open(args['log_path'], 'a+') as f:
+		#	 	spamwriter = csv.writer(f)
+		#		spamwriter.writerow([new_loss, l2_train, l2_test, l2_valid])
 
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('fn')
 	stats = args['input_data_stats']
+	args['output_dir'] = '.'.join(args['load_path'].split('.')[:-1])
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
