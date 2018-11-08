@@ -81,6 +81,14 @@ def add(modality_partial, modality_complete, z_ref, return_std):
 		return np.std(diff, axis=0), z_new
 	return z_new
 
+def noisy_add(modality_partial, modality_complete, z_ref, return_std):
+	add_mean, diff = __modality_diff(modality_partial, modality_complete)
+	std = np.std(diff, axis=0)
+	z_new = z_ref + np.random.normal(add_mean, std, z_ref.shape)
+	if return_std:
+		return std, z_new
+	return z_new
+
 def match(z_ref, model, **kwargs):
 	'''
 	Generic pattern matching method
@@ -207,5 +215,6 @@ def batch_all_match(model, sample_zs, modalities):
 					z_matched = match(sample_zs[i], model, **kwargs)
 					yield i, '%s(%s)'%(mth_name,dist_name), z_matched
 
-		#add
+		# add
 		yield i, 'add', sample_zs[i] + add_mean
+		yield i, 'noisy_add', sample_zs[i] + np.random.normal(add_mean, std, sample_zs[i].shape)

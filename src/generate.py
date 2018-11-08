@@ -64,11 +64,6 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	# encode input
 	z_ref = model.encode(prt_data, modality=partial_x_idx)
 
-	# encode gt for evaluation
-	stats = args['input_data_stats']
-	cpl_data_norm = utils.normalize(cpl_data, stats, args['normalization_method'])
-	z_gt = model.encode(cpl_data, modality=complete_y_idx)
-
 	# get matches
 	z_pred = {}
 	for i, mode, z_matched in pattern_matching.batch_all_match(model, z_ref, (partial_key, complete_key)):
@@ -76,10 +71,11 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 			z_pred[mode] = {'z': np.zeros(z_ref.shape)}
 		z_pred[mode]['z'][i] = z_matched
 
-	z_pred['gt_encoded'] = {'z': z_gt}
-
 	# evaluation
 	N = 8 # 8 samples per action
+	stats = args['input_data_stats']
+	cpl_data_norm = utils.normalize(cpl_data, stats, args['normalization_method'])
+	z_gt = model.encode(cpl_data, modality=complete_y_idx)
 	scores = {}
 	pred_n = complete_y_idx - partial_x_idx
 	if pred_n != 0:
@@ -181,13 +177,15 @@ def __compare_pattern_matching_for_generation(model, stats, args):
 if __name__ == '__main__':
 	args, data_iter, test_iter, valid_data = parser.get_parse('test')
 	output_dir = '.'.join(args['load_path'].split('.')[:-1])
-	args['output_dir'] = output_dir
+	args['output_dir'] = output_dir+'_generation'
 	args['quantitative_evaluation'] = True
 	stats = args['input_data_stats']
 
-	# test.py is only for testing pattern matching
+	# generate.py is only for testing pattern matching
 	# finish here if input methods do using pattern matching
 	assert args['method_name'] in parser.OUR_METHODS
+	# generate.py only test for supervised method
+	assert args['supervised'] == True
 
 	# import model class
 	module = __import__('models.'+ args['method_name'])
@@ -198,64 +196,20 @@ if __name__ == '__main__':
 	model.load(args['load_path'])
 
 	print 'Load embedding ...'
-	data_iter, data_iter_ = tee(data_iter)
-	__load_embeddding(model, data_iter_, args)
+	# data_iter, data_iter_ = tee(data_iter)
+	kwargs = {'class_only': True}
+	__load_embeddding(model, data_iter, args, **kwargs)
 
 	print 'Computing PCA ...'
 	args['output_dir'] = output_dir + '_PCA'
-	#viz_embedding.plot_convex_hall(model.embedding, args)
+	viz_embedding.plot_convex_hall(model.embedding, args)
 
-	print 'Test interpolaton ...'
-	args['output_dir'] = output_dir + '_interpolation'
-	#__interpolate(model, stats, args)
+	# print 'Test interpolaton ...'
+	# args['output_dir'] = output_dir + '_interpolation'
+	# __interpolate(model, stats, args)
 
-	#valid_data[:,:,:6] = 0
-
-	print 'Comparing pattern matching methods for prediction'
-	xp_valid,_ = model.format_data(valid_data, for_prediction=True)
-	xp_valid = utils.normalize(xp_valid, stats, args['normalization_method'])
-	modalities = (model.timesteps_in-1, model.timesteps-1,
-				  model.timesteps_in-1, model.timesteps-1)
-	args['output_dir'] = output_dir + '_pattern_matching'
-	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
-
-	if args['do_classification']:
-		# format validation data
-		xc_valid,_ = model.format_data(valid_data, for_classification=True)
-		xc_valid = utils.normalize(xc_valid, stats, args['normalization_method'])
-		xp_valid_unamed,_ = model.format_data(xc_valid, for_prediction=True)
-		names_valid = formatter.without_motion(model, valid_data)
-
-		# load different embedding
-		print 'Load embedding ...'
-		model.reset_embedding()
-		data_iter, data_iter_ = tee(data_iter)
-		kwargs = {'ignore_name': True}
-		__load_embeddding(model, data_iter_, args, **kwargs)
-
-		print 'Compare pattern matching methods for prediction without name'
-		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
-		__compare_pattern_matching(xp_valid_unamed, valid_data, model, modalities, args)
-
-		# load different embedding
-		print 'Load embedding ...'
-		# data_iter, data_iter_ = tee(data_iter)
-		model.reset_embedding()
-		kwargs = {'class_only': True}
-		__load_embeddding(model, data_iter, args, **kwargs)
-
-		print 'Compare pattern matching methods for classification (motion->name)'
-		args['output_dir'] = output_dir + '_pattern_matching_(classification)'
-		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(xc_valid, names_valid, model, modalities, args)
-
-		print 'Compare pattern matching methods for classification (motion->both)'
-		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
-		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(xc_valid, valid_data, model, modalities, args)
-
-		print 'Compare pattern matchin methods for generation'
-		args['output_dir'] = output_dir + '_pattern_matching_(generation)'
-		__compare_pattern_matching_for_generation(model, stats, args)
+	print 'Compare pattern matchin methods for generation'
+	args['output_dir'] = output_dir + '_pattern_matching_(generation)'
+	__compare_pattern_matching_for_generation(model, stats, args)
 
 
