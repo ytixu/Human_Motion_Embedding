@@ -4,6 +4,7 @@ matplotlib.use('Agg')
 import numpy as np
 from sklearn import cross_validation
 import csv
+import h5py
 
 from utils import parser, utils
 from models.fn import FN
@@ -12,6 +13,9 @@ import viz_2d_poses as viz_poses
 LOSS = 10000
 CV_SPLIT = 0.2
 FAIL_COUNT = 0
+SUBACT = 0
+
+martinez_samples = '../../human-motion-prediction/samples.h5'
 
 def get_embedding(x, model, args, stats):
 	x = utils.normalize(x, stats, args['normalization_method'])
@@ -28,6 +32,21 @@ def get_embedding(x, model, args, stats):
 		x = model.encode(motion, model.timesteps-1)
 
 	return x, y
+
+def get_martinez_poses(model, stats, args):
+	data = {}
+	t = model.timesteps - model.timesteps_in
+	with h5py.File( martinez_samples, 'r' ) as h5f:
+		print h5f['expmap/preds'].keys()
+		for action,_ in args['actions'].iteritems():
+			data[action] = np.zeros((t, model.input_dim))
+			try:
+				temp = h5f['expmap/preds/%s_%d'%(action, 0)][:t,stats['dim_to_use']]
+				data[action][:,:temp.shape[-1]] = temp
+			except:
+				data[action] = []
+
+	return data
 
 def __eval_loss(fn_model, l2_train, l2_test, args):
 	global LOSS, FAIL_COUNT
@@ -70,14 +89,33 @@ def __eval_decoded(model, fn_model, x, y, args, stats):
 
 	return np.mean(err), x_pred
 
-def __plot_sequence(model, y_true, y_pred, stats, args):
-	titles = ['GT', 'predicted']
-	kwargs = {'row_titles':titles,
-		'parameterization':stats['parameterization'],
-		'title':'FN'
-	}
-	x = np.concatenate([y_true[0], y_pred[0,model.timesteps_in:]], axis=0).reshape((2, y_true.shape[1], -1))
-	viz_poses.plot_batch(x, stats, args, **kwargs)
+def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, args):
+	for action,k in args['actions'].iteritems():
+		if len(m_pred[action]) == 0:
+			continue
+		print action,k
+		idx = k*8+SUBACT
+		z_pred = fn_model.predict(x[idx:idx+1])
+		z = np.zeros((4, z_pred.shape[-1]))
+		z[0] = z_pred[0]
+		titles = ['Gr. Truth']*6
+		titles[-1] = 'ADD'
+		titles[2] = 'Prediction'
+		titles[1] = 'Res-Seq2Seq'
+		for i in range(1,3):
+			titles[2+i] = 'Pertube-%d'%((3-i)*2)
+			z[i] = np.random.normal(z_pred[0], std_diff/((3-i)*2))
+		z[-1] = x[idx]+diff
+
+		y_pred = model.decode(z)
+		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+
+		kwargs = {'row_titles':titles,
+			'parameterization':stats['parameterization'],
+			'title':'FN' + ' ' + action
+		}
+		x_ = np.concatenate([[y_true[idx], m_pred[action]], y_pred[:,model.timesteps_in:]], axis=0) #.reshape((6, y_true.shape[1], -1))
+		viz_poses.plot_batch(x_, stats, args, **kwargs)
 
 
 def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
@@ -96,11 +134,15 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 
 	i = 1
 
+	m_data = get_martinez_poses(model, stats, args)
+
 	for x in data_iter:
 		print 'ITER', i
 		i += 1
 
 		x,y = get_embedding(x, model, args, stats)
+		mean_diff = np.std(y-x, axis=0)
+		std_diff = np.std(y-x, axis=0)
 
 		# training fn model
 		x_train, x_test, y_train, y_test = cross_validation.train_test_split(x, y, test_size=CV_SPLIT)
@@ -130,8 +172,8 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 
 		# saving fn model
 		if __eval_loss(fn_model, l2_train, l2_test, args):
-			if args['do_prediction']:
-				__plot_sequence(model, y_valid, y_pred, stats, args)
+			if args['do_prediction'] and l2_test < 1.4:
+				__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, std_diff, stats, args)
 
 		#if not args['debug']:
 		#	with open(args['log_path'], 'a+') as f:

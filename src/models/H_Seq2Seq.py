@@ -22,11 +22,13 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		return super(H_Seq2Seq, self).__init__(args)
 
 	def make_model(self):
+		self.partial_latent_dim = 256 # self.latent_dim/2
+
 		# Similar to HH_RNN
 		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
-		encode_reshape = K_layer.Reshape((self.unit_n, self.latent_dim/2))
-		encode_1 = abs_model.RNN_UNIT(self.latent_dim/2)
+		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
+		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
 		encode_2 = abs_model.RNN_UNIT(self.latent_dim)
 
 		def encode_partials(seq):
@@ -40,11 +42,11 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decode_euler_1 = K_layer.Dense(self.latent_dim/2, activation=self.activation)
+		decode_euler_1 = K_layer.Dense(self.partial_latent_dim, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 
 		decode_repete = K_layer.RepeatVector(self.timesteps_out)
-		decode_residual_1 = abs_model.RNN_UNIT(self.latent_dim/2, return_sequences=True, activation=self.activation)
+		decode_residual_1 = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		decoded =  decode_residual_2(decode_residual_1(decode_repete(encoded)))
