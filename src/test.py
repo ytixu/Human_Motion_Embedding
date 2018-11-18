@@ -25,25 +25,26 @@ def __load_embeddding(model, data_iter, args, **kwargs):
 			break # this gives a random sample of the embedding with the data_iter size
 
 def __interpolate(model, stats, args):
-	# get 2 random vectors in embedding
-	sample_set = model.embedding[model.timesteps-1]
-	zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
-	# interpolate
-	itp = embedding_utils.interpolate(zs[0], zs[1])
-	# decode everything
-	itp = np.concatenate([zs[:1], itp], axis=0)
-	itp = np.concatenate([itp, zs[1:]], axis=0)
-	x = model.decode(itp)[:,range(0,model.timesteps,5)]
-	x = utils.unormalize(x, stats, args['normalization_method'])
-	# visualize
-	titles = ['']*itp.shape[0]
-	titles[0] = 'start'
-	titles[-1] = 'end'
-	kwargs = {'row_titles':titles,
-		'parameterization':stats['parameterization'],
-		'title':'Interpolation'
-	}
-	viz_poses.plot_batch(x, stats, args, **kwargs)
+	for i in range(10):
+		# get 2 random vectors in embedding
+		sample_set = model.embedding[model.timesteps-1]
+		zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
+		# interpolate
+		itp = embedding_utils.interpolate(zs[0], zs[1])
+		# decode everything
+		itp = np.concatenate([zs[:1], itp], axis=0)
+		itp = np.concatenate([itp, zs[1:]], axis=0)
+		x = model.decode(itp)[:,range(0,model.timesteps,3)]
+		x = utils.unormalize(x, stats, args['normalization_method'])
+		# visualize
+		titles = ['']*itp.shape[0]
+		titles[0] = 'start'
+		titles[-1] = 'end'
+		kwargs = {'row_titles':titles,
+			'parameterization':stats['parameterization'],
+			'title':'Interpolation %d'%i
+		}
+		viz_poses.plot_batch(x, stats, args, **kwargs)
 
 def __print_scores(scores, supervised):
 	actions = scores[scores.keys()[0]].keys()
@@ -208,7 +209,7 @@ if __name__ == '__main__':
 
 	print 'Test interpolaton ...'
 	args['output_dir'] = output_dir + '_interpolation'
-	#__interpolate(model, stats, args)
+	__interpolate(model, stats, args)
 
 	#valid_data[:,:,:6] = 0
 

@@ -26,7 +26,7 @@ class Forward_NN:
 
 	def make_model(self):
 		inputs = Input(shape=(self.embedding_dim,))
-		#d1 = Dense(self.interim_dim, activation='relu')(inputs)
+		#d1 = Dense(self.interim_dim/2, activation='relu')(inputs)
 		#d2 = Dense(self.interim_dim, activation='relu')(d1)
 		#d3 = Dense(self.interim_dim, activation='relu')(d2)
 		outputs = Dense(self.embedding_dim, activation='tanh')(inputs)

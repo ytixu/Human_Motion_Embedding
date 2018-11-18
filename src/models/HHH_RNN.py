@@ -11,7 +11,8 @@ import HH_RNN
 class HHH_RNN(HH_RNN.HH_RNN):
 
 	def make_model(self):
-		self.partial_latent_dim = self.latent_dim/2
+		self.timesteps_out = 10
+		self.partial_latent_dim = 514 # self.latent_dim/2
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
@@ -76,8 +77,10 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		temp_weights = [layer.get_weights() for layer in self.model.layers]
 		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
 
-		self.timesteps = 60
-		self.timesteps_in = 30
+		self.timesteps = 70
+		self.timesteps_in = 60
+		self.timesteps_out = 10
+		return 
 		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]

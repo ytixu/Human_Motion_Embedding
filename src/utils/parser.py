@@ -256,7 +256,8 @@ def get_parse(mode):
 		assert args[ts]['parameterization'] == 'euler' or args['normalization_method'] != 'norm_pi'
 
 		for k in ['data_std', 'data_min', 'data_max']:
-			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
+			args[ts][k] = np.array(stats[k])[args[ts]['dim_to_use'] ]
+			print args[ts][k].shape
 
 		args['actions'] = stats['action_list']
 		if args['action'] is not None:
