@@ -25,11 +25,14 @@ import matplotlib.pyplot as plt
 
 from utils.utils import SHORT_TERM_IDX
 
-LABELS = [['train','test'],
-			['pred-80', 'pred-160', 'pred-320', 'pred-400'],
-			['mean-std','std-std']]
-COLORS = ['b','r','g','k']
+AVERAGE_OVER = 3
+
+LABELS = [['Train','Test'],
+			['80ms', '160ms', '320ms', '400ms'],
+			['Mean STD (x10)','STD STD (x10)']]
+FILLED_MARKER = ['o', 'v', '^', '*']
 LINESTYLES = ['-', '--', ':']
+COLOR_STYLE = ['#1f77b4','#ff7f0e','#2ca02c']
 
 ACTIONS = {"purchases": 8, "walking": 0, "takingphoto": 11, "eating": 1, "sitting": 9, "discussion": 3, "walkingdog": 13, "greeting": 5, "walkingtogether": 14, "phoning": 6, "posing": 7, "directions": 4, "smoking": 2, "waiting": 12, "sittingdown": 10}
 
@@ -48,12 +51,12 @@ def __get_data(row, for_classification):
 	valid, std_mean, std_std = 0,0,0
 	if for_classification:
 		valid = __classification_score_per_action(__to_numb_array(row[6]))
-		std_mean = float(row[7])
-		std_std = float(row[8])
+		std_mean = float(row[3])
+		std_std = float(row[4])
 	else:
 		valid = __to_numb_array(row[3])[SHORT_TERM_IDX]
-		std_mean = float(row[4])
-		std_std = float(row[5])
+		std_mean = float(row[4])*10
+		std_std = float(row[5])*10
 	return [[train, test], valid, [std_mean, std_std]]
 
 def __print_format_performance(line, for_classification):
@@ -109,20 +112,28 @@ def plot_training_curve(args):
 	ax = plt.subplot(111)
 
 	for i in range(key): # for train-test, valid, std_mean-std_std
+		if i == 2:
+			continue
 		for j in range(min(len(data[0][i]), 4)):
-			line = [data[k][i][j] for k in range(len(data))]
+			line = [np.mean([data[kk][i][j]
+						for kk in range(max(0,k-AVERAGE_OVER), min(len(data),k+AVERAGE_OVER))])
+					for k in range(0,len(data),10)]
 			if np.mean(line) == 0: # skip std for Seq2Seq and H_Seq2Seq
 				continue
-			x = range(len(line))
+			x = range(0,len(line)*10,10)
 			ax.plot(x, line, label=LABELS[i][j],
-				c=COLORS[j], linestyle=LINESTYLES[i])
+				marker=FILLED_MARKER[j], linestyle=LINESTYLES[i],
+				c=COLOR_STYLE[i], linewidth=3, markersize=10)
 
 	# Shrink current axis's height by 10% on the bottom
 	box = ax.get_position()
 	ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
 	# Put a legend below current axis
-	ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4)
-	plt.suptitle(name)
+	ax.legend()#loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4)
+	ax.set_xlabel('Epoch')
+	ax.set_ylabel('Mean angle error')
+
+	# plt.suptitle(name)
 
 	# Show or save plot
 	if args['save']:
@@ -152,4 +163,4 @@ if __name__ == '__main__':
 		args['path'] = f
 		plot_training_curve(args)
 
-# python viz_training_curves.py -p ../out/gru_t40_l1024_u10_loss-mean_absolute_error_opt-Nadam-lr=0.001_norm_pi_1538602020.csv -i 150
+# python viz_training_curves.py -p ../out/gru_t20_l512_u10_loss-mean_squared_error_opt-optimizers.Nadam-lr=0.001_norm_pi_1539338293.csv -i 150
