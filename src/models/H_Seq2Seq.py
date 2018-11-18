@@ -17,7 +17,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		# hierarchies must be multiple of unit_t
 		assert not any([(h+1)%self.unit_t for h in self.hierarchies])
 		self.unit_n = self.timesteps_in/self.unit_t
-		self.sup_hierarchies = [self.__get_sup_index(h) for h in self.hierarchies]
 
 		return super(H_Seq2Seq, self).__init__(args)
 
@@ -55,9 +54,6 @@ class H_Seq2Seq(abs_model.AbstractModel):
 		self.encoder = Model(inputs, encoded)
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
-
-	def __get_sup_index(self, i):
-		return (i+1)/self.unit_t-1
 
 	def load_embedding(self, data, pred_only=False, new=False):
 		pass

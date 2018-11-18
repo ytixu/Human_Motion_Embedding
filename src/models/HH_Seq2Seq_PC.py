@@ -8,11 +8,11 @@ import abs_model
 from utils import pattern_matching, embedding_utils, formatter
 import H_Seq2Seq
 
-class HH_Seq2Seq(H_Seq2Seq.H_Seq2Seq):
+class HH_Seq2Seq_PC(H_Seq2Seq.H_Seq2Seq):
 
 	def make_model(self):
 		self.partial_latent_dim = self.latent_dim/2
-		self.unit_n_out = self.timesteps_out/self.unit_t
+		self.unit_n_out = self.timesteps/self.unit_t
 
 		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
@@ -36,9 +36,9 @@ class HH_Seq2Seq(H_Seq2Seq.H_Seq2Seq):
 
 		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
-		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps_out, self.output_dim))
+		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
 
-		decode_repete = K_layer.RepeatVector(self.timesteps_out)
+		decode_repete = K_layer.RepeatVector(self.timesteps)
 		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
@@ -59,3 +59,9 @@ class HH_Seq2Seq(H_Seq2Seq.H_Seq2Seq):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
+
+	def format_data(self, x, **kwargs):
+		return x[:,:self.timesteps_in], x
+
+	def predict(self, x, **kwargs):
+		return self.model.predict(x)[:,self.timesteps_in:]
