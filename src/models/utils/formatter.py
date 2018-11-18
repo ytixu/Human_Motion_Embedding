@@ -103,12 +103,12 @@ def format_h_rnn(model, x, **kwargs):
 
 	random_name = False if 'expand_all_names' in kwargs and kwargs['expand_all_names'] else True
 
-	if model.supervised and random_name:
-		x = randomize_name(model, x)
+	#if model.supervised and random_name:
+	#	x = randomize_name(model, x)
 
 	x,y = expand_time(model, x)
 
-	if model.supervised and not random_name:
-		y = np.concatenate([without_name(model, y), without_motion(model, y), y], axis=1)
+	#if model.supervised and not random_name:
+	#	y = np.concatenate([without_name(model, y), without_motion(model, y), y], axis=1)
 
 	return x, y

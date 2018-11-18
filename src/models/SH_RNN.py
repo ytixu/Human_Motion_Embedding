@@ -11,11 +11,9 @@ import HH_RNN
 class SH_RNN(HH_RNN.HH_RNN):
 	# 3 layers
 	def __init__(self, args):
-		assert args['supervised']
-
 		self.sub_unit = 5
-		self.partial_latent_dim = 800
-		self.sub_partial_latent_dim = args['latent_dim']/4
+		self.partial_latent_dim = args['latent_dim']/2 #514 # 800
+		self.sub_partial_latent_dim = 120 #args['latent_dim']/4
 
 		return super(SH_RNN, self).__init__(args)
 
@@ -88,7 +86,7 @@ class SH_RNN(HH_RNN.HH_RNN):
 		self.model = Model(inputs, decoded)
 
 
-	def load(self, load_path):
+	def load_back(self, load_path):
 		self.timesteps = 75
 		self.timesteps_in = 50
 		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)

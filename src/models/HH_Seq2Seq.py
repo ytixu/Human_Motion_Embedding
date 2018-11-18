@@ -6,19 +6,19 @@ from keras.models import Model
 
 import abs_model
 from utils import pattern_matching, embedding_utils, formatter
-import HH_RNN
+import H_Seq2Seq
 
-class HHH_RNN(HH_RNN.HH_RNN):
+class HH_Seq2Seq(H_Seq2Seq.H_Seq2Seq):
 
 	def make_model(self):
-		self.timesteps_out = 10
-		self.partial_latent_dim = 514 # self.latent_dim/2
+		self.partial_latent_dim = self.latent_dim/2
+		self.unit_n_out = self.timesteps_out/self.unit_t
 
-		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
+		inputs = K_layer.Input(shape=(self.timesteps_in, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
 		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
 		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
-		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
+		encode_2 = abs_model.RNN_UNIT(self.latent_dim)
 
 		def encode_partials(seq):
 			encoded = [None]*self.unit_n
@@ -31,14 +31,14 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decode_repeat_units = K_layer.RepeatVector(self.unit_n)
+		decode_repeat_units = K_layer.RepeatVector(self.unit_n_out)
 		decode_units = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
 		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
-		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
+		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps_out, self.output_dim))
 
-		decode_repete = K_layer.RepeatVector(self.timesteps)
+		decode_repete = K_layer.RepeatVector(self.timesteps_out)
 		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
@@ -52,42 +52,10 @@ class HHH_RNN(HH_RNN.HH_RNN):
 			angle = K_layer.Activation(self.activation)(K_layer.add([angle, residual]))
 			return angle
 
-		angles = [None]*len(self.sup_hierarchies)
-		for i,k in enumerate(self.sup_hierarchies):
-			e = K_layer.Lambda(lambda x: x[:,k], output_shape=(self.latent_dim,))(encoded)
-			angles[i] = decode_angle(e)
-
-		decoded =  K_layer.concatenate(angles, axis=1)
+		decoded = decode_angle(encoded)
 		decoded_ = decode_angle(z)
 
 		self.encoder = Model(inputs, encoded)
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
-
-	def load(self, load_path):
-		self.timesteps = 60
-                self.timesteps_in = 50
-                self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
-                self.unit_n = self.timesteps/self.unit_t
-                self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
-		self.make_model()
-
-		super(HHH_RNN, self).load(load_path)
-
-		temp_weights = [layer.get_weights() for layer in self.model.layers]
-		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
-
-		self.timesteps = 70
-		self.timesteps_in = 60
-		self.timesteps_out = 10
-		return 
-		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
-		self.unit_n = self.timesteps/self.unit_t
-		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
-
-		self.make_model()
-		for layer in self.model.layers:
-			w = layer.get_weights()
-			if len(w) > 0:
-				layer.set_weights(temp_weights[tuple([w[i].shape for i in range(len(w))])])
 

@@ -25,25 +25,26 @@ def __load_embeddding(model, data_iter, args, **kwargs):
 			break # this gives a random sample of the embedding with the data_iter size
 
 def __interpolate(model, stats, args):
-	# get 2 random vectors in embedding
-	sample_set = model.embedding[model.timesteps-1]
-	zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
-	# interpolate
-	itp = embedding_utils.interpolate(zs[0], zs[1])
-	# decode everything
-	itp = np.concatenate([zs[:1], itp], axis=0)
-	itp = np.concatenate([itp, zs[1:]], axis=0)
-	x = model.decode(itp)[:,range(0,model.timesteps,5)]
-	x = utils.unormalize(x, stats, args['normalization_method'])
-	# visualize
-	titles = ['']*itp.shape[0]
-	titles[0] = 'start'
-	titles[-1] = 'end'
-	kwargs = {'row_titles':titles,
-		'parameterization':stats['parameterization'],
-		'title':'Interpolation'
-	}
-	viz_poses.plot_batch(x, stats, args, **kwargs)
+	for i in range(10):
+		# get 2 random vectors in embedding
+		sample_set = model.embedding[model.timesteps-1]
+		zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
+		# interpolate
+		itp = embedding_utils.interpolate(zs[0], zs[1])
+		# decode everything
+		itp = np.concatenate([zs[:1], itp], axis=0)
+		itp = np.concatenate([itp, zs[1:]], axis=0)
+		x = model.decode(itp)[:,range(0,model.timesteps,3)]
+		x = utils.unormalize(x, stats, args['normalization_method'])
+		# visualize
+		titles = ['']*itp.shape[0]
+		titles[0] = 'start'
+		titles[-1] = 'end'
+		kwargs = {'row_titles':titles,
+			'parameterization':stats['parameterization'],
+			'title':'Interpolation %d'%i
+		}
+		viz_poses.plot_batch(x, stats, args, **kwargs)
 
 def __print_scores(scores, supervised):
 	actions = scores[scores.keys()[0]].keys()
@@ -67,6 +68,7 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 	# encode gt for evaluation
 	stats = args['input_data_stats']
 	cpl_data_norm = utils.normalize(cpl_data, stats, args['normalization_method'])
+	print complete_y_idx
 	z_gt = model.encode(cpl_data, modality=complete_y_idx)
 
 	# get matches
@@ -76,7 +78,7 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 			z_pred[mode] = {'z': np.zeros(z_ref.shape)}
 		z_pred[mode]['z'][i] = z_matched
 
-	z_pred['gt_encoded'] = {'z': z_gt}
+	#z_pred['gt_encoded'] = {'z': z_gt}
 
 	# evaluation
 	N = 8 # 8 samples per action
@@ -115,7 +117,7 @@ def __compare_pattern_matching(prt_data, cpl_data, model, modalities, args):
 
 	# visualize
 	for action,i in args['actions'].iteritems():
-		x = np.concatenate([[z_pred['y_gt'][i*N]], [z_pred[m]['y'][i*N] for m in modes]], axis=0)
+		x = np.concatenate([[z_pred['y_gt'][i*N+1]], [z_pred[m]['y'][i*N+1] for m in modes]], axis=0)
 		kwargs = {'row_titles':['gt'] + modes,
 			'parameterization':stats['parameterization'],
 			'title':action
@@ -164,7 +166,7 @@ def __compare_pattern_matching_for_generation(model, stats, args):
 	modes = matches[matches.keys()[0]].keys()
 	for action,i in args['actions'].iteritems():
 		for key in matches.keys():
-			x = np.array([matches[key][m]['y'][i] for m in modes])[:,range(0,model.timesteps,5)]
+			x = np.array([matches[key][m]['y'][i] for m in modes])[:,range(0,model.timesteps,2)]
 			kwargs = {'row_titles':modes,
 				'parameterization':stats['parameterization'],
 				'title':'%s - %s'%(action,key)
@@ -203,11 +205,11 @@ if __name__ == '__main__':
 
 	print 'Computing PCA ...'
 	args['output_dir'] = output_dir + '_PCA'
-	#viz_embedding.plot_convex_hall(model.embedding, args)
+	# viz_embedding.plot_convex_hall(model.embedding, args)
 
 	print 'Test interpolaton ...'
 	args['output_dir'] = output_dir + '_interpolation'
-	#__interpolate(model, stats, args)
+	__interpolate(model, stats, args)
 
 	#valid_data[:,:,:6] = 0
 
@@ -231,31 +233,31 @@ if __name__ == '__main__':
 		model.reset_embedding()
 		data_iter, data_iter_ = tee(data_iter)
 		kwargs = {'ignore_name': True}
-		__load_embeddding(model, data_iter_, args, **kwargs)
+		#__load_embeddding(model, data_iter_, args, **kwargs)
 
 		print 'Compare pattern matching methods for prediction without name'
 		args['output_dir'] = output_dir + '_pattren_matching_(no-name)'
-		__compare_pattern_matching(xp_valid_unamed, valid_data, model, modalities, args)
+		#__compare_pattern_matching(xp_valid_unamed, valid_data, model, modalities, args)
 
 		# load different embedding
 		print 'Load embedding ...'
 		# data_iter, data_iter_ = tee(data_iter)
 		model.reset_embedding()
 		kwargs = {'class_only': True}
-		__load_embeddding(model, data_iter, args, **kwargs)
+		#__load_embeddding(model, data_iter, args, **kwargs)
 
 		print 'Compare pattern matching methods for classification (motion->name)'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification)'
 		modalities = ('motion', 'name', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(xc_valid, names_valid, model, modalities, args)
+		#__compare_pattern_matching(xc_valid, names_valid, model, modalities, args)
 
 		print 'Compare pattern matching methods for classification (motion->both)'
 		args['output_dir'] = output_dir + '_pattern_matching_(classification-to-both)'
 		modalities = ('motion', 'both', model.timesteps-1, model.timesteps-1)
-		__compare_pattern_matching(xc_valid, valid_data, model, modalities, args)
+		#__compare_pattern_matching(xc_valid, valid_data, model, modalities, args)
 
 		print 'Compare pattern matchin methods for generation'
 		args['output_dir'] = output_dir + '_pattern_matching_(generation)'
-		__compare_pattern_matching_for_generation(model, stats, args)
+		#__compare_pattern_matching_for_generation(model, stats, args)
 
 

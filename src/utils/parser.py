@@ -16,7 +16,7 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.8
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN', 'SH_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN', 'SH_RNN', 'HH_Seq2Seq']
 OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN', 'SH_RNN']
 
 # Get data and information on the data
@@ -256,7 +256,8 @@ def get_parse(mode):
 		assert args[ts]['parameterization'] == 'euler' or args['normalization_method'] != 'norm_pi'
 
 		for k in ['data_std', 'data_min', 'data_max']:
-			args[ts][k] = np.array(stats[k])[stats['dim_to_use']]
+			args[ts][k] = np.array(stats[k])[args[ts]['dim_to_use'] ]
+			print args[ts][k].shape
 
 		args['actions'] = stats['action_list']
 		if args['action'] is not None:

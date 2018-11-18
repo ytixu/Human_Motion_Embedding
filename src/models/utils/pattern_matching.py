@@ -17,7 +17,7 @@ def iter_methods():
 	return ['add'] #, 'mean', 'closest', 'closest_partial']
 
 def iter_distance():
-	return ['l2'] #, 'l1', 'cos']
+	return ['l2', 'l1', 'cos']
 
 def __distance__(e1, e2, dist_method=MAD):
 	if dist_method == MSD:
@@ -217,4 +217,5 @@ def batch_all_match(model, sample_zs, modalities):
 
 		# add
 		yield i, 'add', sample_zs[i] + add_mean
-		yield i, 'noisy_add', sample_zs[i] + np.random.normal(add_mean, std, sample_zs[i].shape)
+		for noise in range(1,6):
+			yield i, 'noisy_add_%d'%noise, sample_zs[i] + np.random.normal(add_mean, std/noise, sample_zs[i].shape)
