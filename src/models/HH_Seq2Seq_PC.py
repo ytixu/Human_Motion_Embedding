@@ -11,6 +11,8 @@ import H_Seq2Seq
 class HH_Seq2Seq_PC(H_Seq2Seq.H_Seq2Seq):
 
 	def make_model(self):
+		self.timesteps = self.timesteps_in + self.timesteps_out
+
 		self.partial_latent_dim = self.latent_dim/2
 		self.unit_n_out = self.timesteps/self.unit_t
 
@@ -61,6 +63,9 @@ class HH_Seq2Seq_PC(H_Seq2Seq.H_Seq2Seq):
 
 
 	def format_data(self, x, **kwargs):
+		if 'for_prediction' in kwargs and kwargs['for_prediction']:
+			return x[:,:self.timesteps_in], x[:, self.timesteps_in:]
+
 		return x[:,:self.timesteps_in], x
 
 	def predict(self, x, **kwargs):
