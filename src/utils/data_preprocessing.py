@@ -156,6 +156,10 @@ def convert(to_type, actions, vis, validation_only):
 			x = converter.sequence_expmap2euler(x)
 			if vis:
 				converter.animate(converter.sequence_euler2xyz(x))
+		elif to_type == 'quaterion':
+			x = converter.sequence_expmap2quater(x)
+			if vis:
+				converter.animate(converter.sequence_quater2xyz(x))
 		else:
 			x = converter.sequence_expmap2xyz(x)
 			if vis:
@@ -238,12 +242,13 @@ def whitening(to_type, actions):
 	# https://github.com/asheshjain399/RNNexp/blob/srnn/structural_rnn/CRFProblems/H3.6m/dataParser/Utils/motionGenerationError.m#L40-L54
 	'''
 	# First 6 values are global rotation and translation, which are also ignored.
-	dimensions_to_ignore = range(6)+list(np.where(data_std < 1e-4)[0])
+	# dimensions_to_ignore = range(6)+list(np.where(data_std < 1e-4)[0])
+	dimensions_to_ignore = list(np.where(data_std < 1e-4)[0])
 	dimensions_to_use = list(np.where(data_std >= 1e-4)[0])
 
 	print 'Used dimensions:', len(dimensions_to_use), dimensions_to_use
 	# For euler and expmap:
-	# 48, [6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
+	# 54, [0 1,2,3,4,5,6,7,8,9,12,13,14,15,21,22,23,24,27,28,29,30,36,37,38,39,40,41,42,43,44,45,46,47,51,52,53,54,55,56,57,60,61,62,75,76,77,78,79,80,81,84,85,86]
 
 	data_std[dimensions_to_ignore] = 1.0
 
@@ -337,7 +342,7 @@ def get_baseline(to_type='euler'):
 
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
-	list_of_type = ['euler', 'euclidean', 'expmap']
+	list_of_type = ['euler', 'euclidean', 'expmap', 'quaterion']
 	ap.add_argument('-t', '--type', required=False, help='Choice of parameterization', default='euler', choices=list_of_type)
 	ap.add_argument('-v', '--visualize', action='store_true', help='Visualize the data only')
 	ap.add_argument('-V', '--visualize_validation', action='store_true', help='Visualize the validation data')

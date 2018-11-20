@@ -416,6 +416,30 @@ def sequence_expmap2euler(data):
       data[i,k:k+3] = rotmat2euler( expmap2rotmat( data[i,k:k+3] ))
   return data
 
+def sequence_expmap2quater(data):
+  '''
+  Convert a sequence of exponential map to quaternion
+  '''
+  new_data = np.zeros(data.shape[0], 33*4)
+  for i in np.arange(data.shape[0]):
+    for j,k in enumate(np.arange(3,97,3)):
+      new_data[i,j*4:(j+1)*4] = rotmat2quat( expmap2rotmat( data[i,k:k+3] ))
+  return new_data
+
+def sequence_quater2expmap(data):
+  '''
+  Convert a sequence of quaternion to exponential map
+  '''
+  new_data = np.zeros(data.shape[0], 99)
+  for i in np.arange(data.shape[0]):
+    for j,k in enumate(np.arange(3,97,3)):
+      new_data[i,k:k+3] = quat2expmap( data[i,j*4:(j+1)*4] )
+  return new_data
+
+
+def sequence_quater2euler(data):
+  return sequence_expmap2euler(sequence_quater2expmap(data))
+
 def sequence_something2xyz__(data, data_type='expmap'):
   '''
   Convert a sequence of exponential map or euler to euclidean space using FK
@@ -442,6 +466,10 @@ def sequence_expmap2xyz(data):
 
 def sequence_euler2xyz(data):
   return sequence_something2xyz__(data, 'euler')
+
+def sequence_quater2xyz(data):
+  data = sequence_quater2expmap(data)
+  return sequence_something2xyz__(data)
 
 # For plotting poses
 # relevant_coords = [0, 1, 2, 3, 6, 7, 8, 12, 13, 14, 15, 17, 18, 19, 25, 26, 27]

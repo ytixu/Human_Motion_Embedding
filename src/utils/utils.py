@@ -82,13 +82,20 @@ def l2_error(x1, x2, averaged=True):
 	else:
 		return s
 
-def __convert_expmap2euler(x, stats):
+
+def __convert_2euler_withfunc(x, stats, func):
 	x = recover(x, stats)
 	x_euler = np.zeros(x.shape)
 	for i in range(x.shape[0]):
-		x_euler[i] = converter.sequence_expmap2euler(x[i])
+		x_euler[i] = func(x[i])
 	x_euler[:,:,:6] = 0
 	return x_euler
+
+def __convert_expmap2euler(x, stats):
+	__convert_something2euler(x, stats, converter.sequence_expmap2euler)
+
+def __convert_quater2euler(x, stats):
+	__convert_something2euler(x, stats, converter.sequence_quater2euler)
 
 def prediction_error(y_pred, y_true, stats, averaged=True):
 	n = 0 if stats['ignore_global'] else 6
@@ -99,6 +106,12 @@ def prediction_error(y_pred, y_true, stats, averaged=True):
 		y_pred = __convert_expmap2euler(y_pred[:,:,:stats['data_dim']], stats)
 		y_true = __convert_expmap2euler(y_true[:,:,:stats['data_dim']], stats)
 		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
+		return l2_error(y_pred[:,:,idx_to_use][:,:,n:], y_true[:,:,idx_to_use][:,:,n:], averaged)
+	elif stats['parameterization'] == 'quaternion':
+		y_pred = __convert_quater2euler(y_pred[:,:,:stats['data_dim']], stats)
+		y_true = __convert_quater2euler(y_true[:,:,:stats['data_dim']], stats)
+		idx_to_use = np.where(np.std(np.reshape(y_true, (-1, y_true.shape[-1])), axis=0) > 1e-4)[0]
+		print len(idx_to_use), idx_to_use
 		return l2_error(y_pred[:,:,idx_to_use][:,:,n:], y_true[:,:,idx_to_use][:,:,n:], averaged)
 	else:
 		# use the same l2 for euclidean
