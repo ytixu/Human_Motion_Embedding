@@ -156,7 +156,7 @@ def convert(to_type, actions, vis, validation_only):
 			x = converter.sequence_expmap2euler(x)
 			if vis:
 				converter.animate(converter.sequence_euler2xyz(x))
-		elif to_type == 'quaterion':
+		elif to_type == 'quaternion':
 			x = converter.sequence_expmap2quater(x)
 			if vis:
 				converter.animate(converter.sequence_quater2xyz(x))
@@ -342,7 +342,7 @@ def get_baseline(to_type='euler'):
 
 if __name__ == '__main__':
 	ap = argparse.ArgumentParser()
-	list_of_type = ['euler', 'euclidean', 'expmap', 'quaterion']
+	list_of_type = ['euler', 'euclidean', 'expmap', 'quaternion']
 	ap.add_argument('-t', '--type', required=False, help='Choice of parameterization', default='euler', choices=list_of_type)
 	ap.add_argument('-v', '--visualize', action='store_true', help='Visualize the data only')
 	ap.add_argument('-V', '--visualize_validation', action='store_true', help='Visualize the validation data')
