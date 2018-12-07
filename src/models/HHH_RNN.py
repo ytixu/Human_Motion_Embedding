@@ -12,7 +12,7 @@ class HHH_RNN(HH_RNN.HH_RNN):
 
 	def make_model(self):
 		self.timesteps_out = 10
-		self.partial_latent_dim = 514 # self.latent_dim/2
+		self.partial_latent_dim = 514 #self.latent_dim/2
 
 		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
 		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
@@ -34,21 +34,21 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		decode_repeat_units = K_layer.RepeatVector(self.unit_n)
 		decode_units = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
 
-		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
+		#decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
 		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
 		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
 
 		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
+		#decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
 		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
 
 		def decode_angle(e):
 			angle = decode_units(decode_repeat_units(e))
-			angle = K_layer.TimeDistributed(decode_euler_1)(angle)
+			#angle = K_layer.TimeDistributed(decode_euler_1)(angle)
 			angle = K_layer.TimeDistributed(decode_euler_2)(angle)
 			angle = decode_repete_angles(angle)
 			residual = decode_repete(e)
-			residual = decode_residual_2(decode_residual_1(residual))
+			residual = decode_residual_2(residual) # decode_residual_1(residual))
 			angle = K_layer.Activation(self.activation)(K_layer.add([angle, residual]))
 			return angle
 
@@ -64,7 +64,7 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		self.decoder = Model(z, decoded_)
 		self.model = Model(inputs, decoded)
 
-	def load(self, load_path):
+	def back_load(self, load_path):
 		self.timesteps = 60
                 self.timesteps_in = 50
                 self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)

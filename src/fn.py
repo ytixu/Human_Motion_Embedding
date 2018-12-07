@@ -13,7 +13,7 @@ import viz_2d_poses as viz_poses
 LOSS = 10000
 CV_SPLIT = 0.2
 FAIL_COUNT = 0
-SUBACT = 0
+SUBACT = 2
 
 martinez_samples = '../../human-motion-prediction/samples.h5'
 
@@ -22,10 +22,10 @@ def get_embedding(x, model, args, stats):
 	y = None
 
 	if args['do_prediction']:
-		new_x = model.encode(x[:,:model.timesteps_in], model.timesteps_in-1)
-		new_y = np.zeros(x[:,:model.timesteps_in].shape)
-		new_y[:,:model.timesteps_out] = x[:,-model.timesteps_out:]
-		y = model.encode(new_y, model.timesteps_out-1)
+		#new_x = model.encode(x[:,:model.timesteps_in], model.timesteps_in-1)
+		#new_y = np.zeros(x[:,:model.timesteps_in].shape)
+		#new_y[:,:model.timesteps_out] = x[:,-model.timesteps_out:]
+		#y = model.encode(new_y, model.timesteps_out-1)
 
 		#x =x[:,:model.timesteps_in]
 
@@ -36,7 +36,7 @@ def get_embedding(x, model, args, stats):
                 #x_ = np.concatenate([x[:2], new_y[:2]], axis=0)
                 #viz_poses.plot_batch(x_, stats, args, **kwargs)
 
-		return new_x, y
+		#return new_x, y
 		e = model.encode(x, [model.timesteps_in-1, model.timesteps-1])
 		x, y = e[:,0], e[:,1]
 
@@ -50,13 +50,14 @@ def get_embedding(x, model, args, stats):
 
 def get_martinez_poses(model, stats, args):
 	data = {}
+	subact = [0,2,4,6,1,3,5,7][SUBACT]
 	t = model.timesteps - model.timesteps_in
 	with h5py.File( martinez_samples, 'r' ) as h5f:
 		# print h5f['expmap/preds'].keys()
 		for action,_ in args['actions'].iteritems():
 			data[action] = np.zeros((t, model.input_dim))
 			try:
-				temp = h5f['expmap/preds/%s_%d'%(action, 0)][:t,stats['dim_to_use']]
+				temp = h5f['expmap/preds/%s_%d'%(action, subact)][:t,stats['dim_to_use']]
 				data[action][:,:temp.shape[-1]] = temp
 			except:
 				data[action] = []
@@ -99,13 +100,13 @@ def __eval_decoded(model, fn_model, x, y, diff, args, stats):
 	x_add = utils.unormalize(x_add, stats, args['normalization_method'])
 
 	if args['do_prediction']:
-		print x_pred[:,model.timesteps_in:].shape
-		err = utils.prediction_error(x_pred[:,:model.timesteps_out], y, stats, averaged=False)
-		#err = utils.prediction_error(x_pred[:,model.timesteps_in:], y, stats, averaged=False)
+		#print x_pred[:,model.timesteps_in:].shape
+		#err = utils.prediction_error(x_pred[:,:model.timesteps_out], y, stats, averaged=False)
+		err = utils.prediction_error(x_pred[:,model.timesteps_in:], y, stats, averaged=False)
 		utils.print_prediction_score(err, args['actions'], 'FN')
 
-		err = utils.prediction_error(x_add[:,:model.timesteps_out], y, stats, averaged=False)
-		#err = utils.prediction_error(x_add[:,model.timesteps_in:], y, stats, averaged=False)
+		#err = utils.prediction_error(x_add[:,:model.timesteps_out], y, stats, averaged=False)
+		err = utils.prediction_error(x_add[:,model.timesteps_in:], y, stats, averaged=False)
 		utils.print_prediction_score(err, args['actions'], 'ADD')
 	elif args['do_classification']:
 		err = utils.classification_error(x_pred[:,:,-model.name_dim:], y, stats)
@@ -141,7 +142,7 @@ def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, args):
 		print y_pred[:,model.timesteps_in:].shape
 		x_ = np.concatenate([[y_true[idx], m_pred[action]], y_pred[:,model.timesteps_in:]], axis=0) #.reshape((6, y_true.shape[1], -1))
 		print x_.shape
-		viz_poses.plot_batch(x_[:,::2], stats, args, **kwargs)
+		viz_poses.plot_batch(x_[:,::1], stats, args, **kwargs)
 
 
 def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
@@ -199,8 +200,8 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 		l2_valid, y_pred = __eval_decoded(model, fn_model, x_valid, y_valid, mean_diff, args, stats)
 
 		# saving fn model
-		if not args['debug'] and __eval_loss(fn_model, l2_train, l2_test, args):
-			if args['do_prediction']:
+		if __eval_loss(fn_model, l2_train, l2_test, args):
+			if not args['debug'] and args['do_prediction']:
 				#pass
 				__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, std_diff, stats, args)
 
