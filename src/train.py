@@ -29,6 +29,7 @@ def __eval(model, x, y, args, stats):
 	y_pred = model.autoencode(x)
 	if y_pred.shape[-1] != len(args['actions']): # TODO
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+	print y_pred.shape, y.shape
 	return np.mean(utils.l2_error(y_pred, y))
 
 def __eval_pred(model, x, y, args, stats):
@@ -40,6 +41,7 @@ def __eval_pred(model, x, y, args, stats):
 	if len(y_pred) == 2: # TODO: need better way to detect this
 		std, y_pred = y_pred
 	y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
+	print y_pred.shape, y.shape
 	return std, utils.prediction_error(y_pred, y, stats, averaged=False)
 
 def __eval_class(model, x, y, args, stats):
@@ -115,7 +117,8 @@ def train(model, data_iter, test_iter, valid_data, args):
 		# prediction error with validation data
 		if args['do_prediction']:
 			# populate embedding with random training data
-			model.load_embedding(norm_x[rand_idx], pred_only=True, new=True)
+			#model.load_embedding(x[rand_idx], pred_only=True, new=True)
+			model.load_embedding(norm_x, pred_only=True, new=True)
 			std, l2_valid = __eval_pred(model, xp_valid, yp_valid, args, stats)
 			mean_std_pred, std_std_pred = 0, 0
 			if len(std) > 0:

@@ -189,9 +189,10 @@ def convert(to_type, actions, vis, validation_only):
 	for k, cond, gt in valid_set:
 		subject, action, subact = k
 		for data_name, x in [('cond',cond), ('gt',gt)]:
-			data = np.copy(x)
+			data = [None]*4
 			for i in range(4):
 				data[i] = convert_to_type(x[i])
+			data = np.array(data)
 			print data.shape
 			if not vis:
 				np.save(directory+'/valid/%s_%d_%d-%s.npy'%(action, subject, subact, data_name), data)

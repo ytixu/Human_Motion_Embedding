@@ -85,17 +85,21 @@ def l2_error(x1, x2, averaged=True):
 
 def __convert_2euler_withfunc(x, stats, func):
 	x = recover(x, stats)
-	x_euler = np.zeros(x.shape)
+	b,t,_ = x.shape
+	x_euler = np.zeros((b,t,99))
 	for i in range(x.shape[0]):
 		x_euler[i] = func(x[i])
 	x_euler[:,:,:6] = 0
 	return x_euler
 
+def __convert_sequence_unormed_quater2euler(x):
+	return converter.sequence_quater2euler(x, True)
+
 def __convert_expmap2euler(x, stats):
-	__convert_something2euler(x, stats, converter.sequence_expmap2euler)
+	return __convert_2euler_withfunc(x, stats, converter.sequence_expmap2euler)
 
 def __convert_quater2euler(x, stats):
-	__convert_something2euler(x, stats, converter.sequence_quater2euler)
+	return __convert_2euler_withfunc(x, stats, __convert_sequence_unormed_quater2euler)
 
 def prediction_error(y_pred, y_true, stats, averaged=True):
 	n = 0 if stats['ignore_global'] else 6

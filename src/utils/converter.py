@@ -412,14 +412,17 @@ def sequence_expmap2quater(data):
       new_data[i,j*4:(j+1)*4] = rotmat2quat( expmap2rotmat( data[i,k:k+3] ))
   return new_data
 
-def sequence_quater2expmap(data):
+def sequence_quater2expmap(data, unormed=False):
   '''
   Convert a sequence of quaternion to exponential map
   '''
   new_data = np.zeros((data.shape[0], 99))
   for i in np.arange(data.shape[0]):
     for j,k in enumerate(np.arange(3,97,3)):
-      new_data[i,k:k+3], _ = quat2expmap( data[i,j*4:(j+1)*4] )
+      quat = data[i,j*4:(j+1)*4]
+      if unormed:
+        quat = quat / np.linalg.norm(quat)
+      new_data[i,k:k+3], _ = quat2expmap( quat )
   return new_data
 
 def sequence_euler2expmap(data):
@@ -431,8 +434,8 @@ def sequence_euler2expmap(data):
       data[i,k:k+3], _ = rotmat2expmap( euler2rotmap( data[i,k:k+3] ))
   return data
 
-def sequence_quater2euler(data):
-  return sequence_expmap2euler(sequence_quater2expmap(data))
+def sequence_quater2euler(data, unormed=False):
+  return sequence_expmap2euler(sequence_quater2expmap(data, unormed))
 
 def sequence_expmap2xyz(data):
   '''
