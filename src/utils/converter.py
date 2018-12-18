@@ -156,7 +156,6 @@ def rotmat2euler( R ):
 #################################
 # these are all copied form
 # https://github.com/matthew-brett/transforms3d/blob/master/transforms3d/euler.py
-
 def euler2mat(ai, aj, ak, axes='sxyz'):
 
   """Return rotation matrix from Euler angles and axis sequence.
@@ -240,7 +239,7 @@ def euler2mat(ai, aj, ak, axes='sxyz'):
   return M
 
 def euler2rotmap(euler):
-  return euler2mat(euler[0], euler[1], euler[2])
+  return euler2mat(-euler[0], -euler[1], -euler[2])
 
 #################################
 ####### Foward kinematics #######

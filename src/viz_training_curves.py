@@ -54,9 +54,9 @@ def __get_data(row, for_classification):
 		std_mean = float(row[3])
 		std_std = float(row[4])
 	else:
-		valid = __to_numb_array(row[3])[SHORT_TERM_IDX]
-		std_mean = float(row[4])*10
-		std_std = float(row[5])*10
+		valid = __to_numb_array(row[3])[SHORT_TERM_IDX]# - np.array([0.01, 0.00, 0.01, 0.01])
+		std_mean = float(row[4])#*10
+		std_std = float(row[5])#*10
 	return [[train, test], valid, [std_mean, std_std]]
 
 def __print_format_performance(line, for_classification):
@@ -69,6 +69,7 @@ def __print_format_performance(line, for_classification):
 		print 'Prediction (80-160-320-400ms): '+' '.join(map(str,line[1]))
 	print 'MEAN:', np.mean(line[1])
 	print 'MEAN STD: %f\nSTD STD: %f' %(line[2][0], line[2][1])
+	return line[1]
 
 def plot_training_curve(args):
 	global LABELS
@@ -96,7 +97,9 @@ def plot_training_curve(args):
 	__print_format_performance(data[best_line_idx], plot_classification)
 	best_line_idx = np.argmin([np.mean(d[0]) for d in data])
 	print 'BEST PERFORMANCE:'
-	__print_format_performance(data[best_line_idx], plot_classification)
+	add_prf = __print_format_performance(data[best_line_idx], plot_classification)
+	add_prf = np.around(add_prf, 2)
+	print add_prf
 
 	# Plot curves
 	if plot_classification:
@@ -134,10 +137,11 @@ def plot_training_curve(args):
 	ax.set_ylabel('Mean angle error')
 
 	# plt.suptitle(name)
+	plt.suptitle('ADD: %.2f, %.2f, %.2f, %.2f' % tuple(add_prf))
 
 	# Show or save plot
 	if args['save']:
-		filename = directory+'/'+name+'.png'
+		filename = directory+'/'+name.replace('.','')+'.png'
 		fig.savefig(filename)
 		plt.close(fig)
 		print 'Saved to',filename
