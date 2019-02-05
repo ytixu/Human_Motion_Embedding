@@ -8,7 +8,7 @@ import abs_model
 from utils import pattern_matching, embedding_utils, formatter
 import HH_RNN
 
-class HHH_RNN(HH_RNN.HH_RNN):
+class HHH_RNN_S(HH_RNN.HH_RNN):
 
 	def make_model(self):
 		self.timesteps_out = 10
@@ -31,25 +31,42 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		encoded = encode_2(encoded)
 
 		z = K_layer.Input(shape=(self.latent_dim,))
-		decode_repeat_units = K_layer.RepeatVector(self.unit_n)
-		decode_units = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, activation=self.activation)
+		decode_repeat = K_layer.RepeatVector(1)
+		decode_units = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True, return_state=True) #, activation=self.activation)
 
-		decode_euler_1 = K_layer.Dense(self.output_dim*4, activation=self.activation)
-		decode_euler_2 = K_layer.Dense(self.output_dim, activation=self.activation)
-		decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
+		decode_dense_1 = K_layer.Dense(self.partial_latent_dim, activation=self.activation)
+		decode_dense_2 = K_layer.Dense(self.output_dim, activation=self.activation)
+		#decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
 
-		decode_repete = K_layer.RepeatVector(self.timesteps)
-		decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
-		decode_residual_2 = abs_model.RNN_UNIT(self.output_dim, return_sequences=True, activation=self.activation)
+		#decode_repete = K_layer.RepeatVector(self.timesteps)
+		#decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, return_state=True, activation=self.activation)
+
+		def sampling_base(inputs, t, n, dec_fn, states=None):
+			all_outputs = [None]*t
+			for i in range(t):
+				if i == 0:
+					inputs = decode_repeat(inputs)
+				if states is None:
+					outputs, states = dec_fn(inputs)
+				else:
+					outputs, states = dec_fn(inputs, initial_state=states)
+				all_outputs[i] = outputs
+				inputs = outputs
+			outputs = K_layer.Lambda(lambda x: K_layer.concatenate(x, axis=1))(all_outputs)
+			return outputs, states
 
 		def decode_angle(e):
-			angle = decode_units(decode_repeat_units(e))
-			angle = K_layer.TimeDistributed(decode_euler_1)(angle)
-			angle = K_layer.TimeDistributed(decode_euler_2)(angle)
-			angle = decode_repete_angles(angle)
-			residual = decode_repete(e)
-			residual = decode_residual_2(decode_residual_1(residual))
-			angle = K_layer.Activation(self.activation)(K_layer.add([angle, residual]))
+			angle,_ = sampling_base(e, self.unit_n, self.partial_latent_dim, decode_units)
+			angle = K_layer.TimeDistributed(decode_dense_1)(angle)
+			residual = [None]*self.unit_n
+			states = None
+			for i in range(self.unit_n):
+				inputs = K_layer.Lambda(lambda x: x[:,i])(angle)
+				residual[i], states = sampling_base(inputs, self.unit_t, self.output_dim, decode_residual_2, states)
+			angle = K_layer.Lambda(lambda x: K_layer.concatenate(x, axis=1))(residual)
+			angle = K_layer.TimeDistributed(decode_dense_2)(angle)
+			angle = K_layer.Activation(self.activation)(angle)
 			return angle
 
 		angles = [None]*len(self.sup_hierarchies)
@@ -65,8 +82,8 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		self.model = Model(inputs, decoded)
 
 	def back_load(self, load_path):
-		self.timesteps = 40
-                self.timesteps_in = 20
+		self.timesteps = 60
+                self.timesteps_in = 50
                 self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
                 self.unit_n = self.timesteps/self.unit_t
                 self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
@@ -77,10 +94,10 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		temp_weights = [layer.get_weights() for layer in self.model.layers]
 		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
 
-		self.timesteps = 40
-		self.timesteps_in = 10
-		self.timesteps_out = 30
-		#return
+		self.timesteps = 70
+		self.timesteps_in = 60
+		self.timesteps_out = 10
+		return 
 		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]

@@ -104,3 +104,26 @@ def plot_batch(motions, stats, args, **kwargs):
 		f.savefig(filename)
 		plt.close(f)
 		print 'Saved to', filename
+
+
+def plot_joint_error_distribution(y_pred, y_true, args):
+	actions = ['walking', 'eating', 'discussion', 'greeting', 'phoning', 'posing', 'purchases']
+	err = np.mean(np.abs(y_pred - y_true), 1)
+	f, axarr = plt.subplots(len(actions), 1, sharex=True, sharey=True)
+	f.subplots_adjust(wspace=-0.1)
+	x = range(err.shape[-1])
+
+	for i,a in enumerate(actions):
+		idx = args['actions'][a]
+		for j in range(4):
+			axarr[i].scatter(x,err[4*idx+j], s=1)
+		axarr[i].set_ylabel(a.title())
+
+	if args['debug']:
+		plt.show()
+	else:
+		filename = args['output_dir'] + '_plot_joint_error_distribution.png'
+		f.savefig(filename)
+		plt.close(f)
+		print 'Saved to', filename
+

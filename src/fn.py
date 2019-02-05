@@ -13,7 +13,7 @@ import viz_2d_poses as viz_poses
 LOSS = 10000
 CV_SPLIT = 0.2
 FAIL_COUNT = 0
-SUBACT = 2
+SUBACT = 1
 
 martinez_samples = '../../human-motion-prediction/samples.h5'
 
@@ -21,7 +21,15 @@ def get_embedding(x, model, args, stats):
 	x = utils.normalize(x, stats, args['normalization_method'])
 	y = None
 
-	if args['do_prediction']:
+	print args['do_prediction']
+
+	if args['do_generation']:
+		names = np.copy(x)
+		names[:,:,:-model.name_dim] = 0
+		y = model.encode(x, model.timesteps-1)
+		x = model.encode(names, model.timesteps-1)
+
+	elif args['do_prediction']:
 		#new_x = model.encode(x[:,:model.timesteps_in], model.timesteps_in-1)
 		#new_y = np.zeros(x[:,:model.timesteps_in].shape)
 		#new_y[:,:model.timesteps_out] = x[:,-model.timesteps_out:]
@@ -38,9 +46,11 @@ def get_embedding(x, model, args, stats):
 
 		#return new_x, y
 		e = model.encode(x, [model.timesteps_in-1, model.timesteps-1])
+		#x = e[range(e.shape[0]),np.random.choice(5,e.shape[0],replace=True)]
 		x, y = e[:,0], e[:,1]
+		#y = e[:,-1]
 
-	if args['do_classification']:
+	elif args['do_classification']:
 		motion = np.copy(x)
 		motion[:,:,-model.name_dim:] = 0
 		y = model.encode(x, model.timesteps-1)
@@ -89,8 +99,41 @@ def __eval(fn_model, x, y, args, stats):
 	x_pred = fn_model.predict(x)
 	return utils.l2_error(x_pred, y, averaged=True)
 
+def __eval_generation(model, fn_model, x_test, diff, std_diff, args, stats):
+	x = np.reshape(np.tile(np.eye(15, model.input_dim, k=model.input_dim-15), model.timesteps), (15, model.timesteps, -1))
+	x = model.encode(x, model.timesteps-1)
 
-def __eval_decoded(model, fn_model, x, y, diff, args, stats):
+	x_pred = fn_model.predict(x)
+	x_rand_1 = np.random.normal(x_pred, std_diff/2)
+	x_rand_1 = model.decode(x_rand_1)
+	x_rand_1 = utils.unormalize(x_rand_1, stats, args['normalization_method'])
+
+	x_rand_2 = np.random.normal(x_pred, std_diff)
+	x_rand_2 = model.decode(x_rand_2)
+	x_rand_2 = utils.unormalize(x_rand_2, stats, args['normalization_method'])
+
+	x_pred = model.decode(x_pred)
+	x_pred = utils.unormalize(x_pred, stats, args['normalization_method'])
+
+	x_add = model.decode(x+diff)
+        x_add = utils.unormalize(x_add, stats, args['normalization_method'])
+
+	x_center = model.decode(np.array([np.mean(x_test, 0)]))
+	x_center = utils.unormalize(x_center, stats, args['normalization_method'])
+
+	titles = ['fn', 'noise-50', 'noise-100', 'add', 'center']
+
+	for action, i in args['actions'].iteritems():
+		kwargs = {'row_titles':titles,
+			'parameterization':stats['parameterization'],
+			'title':'Generation-fn-add-%s' % (action)
+                }
+		x_ = np.array([x_pred[i], x_rand_1[i], x_rand_2[i], x_add[i], x_center[0]])
+		viz_poses.plot_batch(x_[:,::2], stats, args, **kwargs)
+
+
+
+def __eval_decoded(model, fn_model, x, y, diff, args, stats): #, x_avg):
 	x_pred = fn_model.predict(x)
 	x_pred = model.decode(x_pred)
 	x_pred = utils.unormalize(x_pred, stats, args['normalization_method'])
@@ -98,6 +141,10 @@ def __eval_decoded(model, fn_model, x, y, diff, args, stats):
 
 	x_add = model.decode(x+diff)
 	x_add = utils.unormalize(x_add, stats, args['normalization_method'])
+
+	#print x_avg.shape
+	#x_avg = np.repeat([x_avg], x_add.shape[0], axis=0)
+	#print x_avg.shape
 
 	if args['do_prediction']:
 		#print x_pred[:,model.timesteps_in:].shape
@@ -108,18 +155,28 @@ def __eval_decoded(model, fn_model, x, y, diff, args, stats):
 		#err = utils.prediction_error(x_add[:,:model.timesteps_out], y, stats, averaged=False)
 		err = utils.prediction_error(x_add[:,model.timesteps_in:], y, stats, averaged=False)
 		utils.print_prediction_score(err, args['actions'], 'ADD')
+
+		#viz_poses.plot_joint_error_distribution(x_pred[:,model.timesteps_in:model.timesteps_in+2], y[:,:2], args)
+		#err = np.mean(np.abs(x_pred[:,model.timesteps_in:] - y), 1)
+		#for i,a in enumerate(args['actions'].keys()):
+		#	print a, np.mean(err[4*i:4*i+4], 0)
+
 	elif args['do_classification']:
 		err = utils.classification_error(x_pred[:,:,-model.name_dim:], y, stats)
 		utils.print_classification_score(err, args['actions'])
 
 	return np.mean(err), x_pred
 
-def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, args):
+def __plot_sequences(model, y_true, m_pred, x, diff, std_diff, stats, args):
+	for i in range(4,8):
+		__plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, i, args)
+
+def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, subact, args):
 	for action,k in args['actions'].iteritems():
 		if len(m_pred[action]) == 0:
 			continue
 		print action,k
-		idx = k*8+SUBACT
+		idx = k*8+subact
 		z_pred = fn_model.predict(x[idx:idx+1])
 		z = np.zeros((4, z_pred.shape[-1]))
 		z[0] = z_pred[0]
@@ -129,7 +186,7 @@ def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, args):
 		titles[1] = 'Res-Seq2Seq'
 		for i in range(1,3):
 			titles[2+i] = 'Pertube-%d'%((3-i)*2)
-			z[i] = np.random.normal(z_pred[0], std_diff/((3-i)*2))
+			z[i] = np.random.normal(z_pred[0], std_diff*i)
 		z[-1] = x[idx]+diff
 
 		y_pred = model.decode(z)
@@ -137,25 +194,28 @@ def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, args):
 
 		kwargs = {'row_titles':titles,
 			'parameterization':stats['parameterization'],
-			'title':'FN' + ' ' + action
+			'title':'FN %s-%d' % (action, subact)
 		}
 		print y_pred[:,model.timesteps_in:].shape
 		x_ = np.concatenate([[y_true[idx], m_pred[action]], y_pred[:,model.timesteps_in:]], axis=0) #.reshape((6, y_true.shape[1], -1))
 		print x_.shape
-		viz_poses.plot_batch(x_[:,::1], stats, args, **kwargs)
+		viz_poses.plot_batch(x_[:,::2], stats, args, **kwargs)
 
 
 def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 	x_valid, y_valid = None, None
 
-	if args['do_prediction']:
+	if args['do_generation']:
+		pass
+
+	elif args['do_prediction']:
 		x_valid, y_valid = model.format_data(valid_data, for_prediction=True)
 		#x_valid = x_valid[:,:model.timesteps_in]
 		x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
 		# xp_valid[:,:,-model.name_dim] = 0
 		x_valid = model.encode(x_valid, model.timesteps_in-1)
 
-	if args['do_classification']:
+	elif args['do_classification']:
 		x_valid, y_valid = model.format_data(valid_data, for_classification=True)
 		x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
 		x_valid = model.encode(x_valid, model.timesteps-1)
@@ -167,6 +227,12 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 	for x in data_iter:
 		print 'ITER', i
 		i += 1
+
+
+		#x_avg = x[:,model.timesteps_in:]
+		#std = np.std(x_avg, axis=0)
+		#print np.mean(std), np.std(std)
+		#x_avg = np.mean(x[:,model.timesteps_in:], axis=0)
 
 		x,y = get_embedding(x, model, args, stats)
 		mean_diff = np.mean(y-x, axis=0)
@@ -196,14 +262,18 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 		print 'MEAN TRAIN', l2_train
 		print 'MEAN TEST', l2_test
 
-		# validation error
-		l2_valid, y_pred = __eval_decoded(model, fn_model, x_valid, y_valid, mean_diff, args, stats)
+		if args['do_generation']:
+			__eval_generation(model, fn_model, y, mean_diff, std_diff, args, stats)
 
-		# saving fn model
-		if __eval_loss(fn_model, l2_train, l2_test, args):
-			if not args['debug'] and args['do_prediction']:
-				#pass
-				__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, std_diff, stats, args)
+		else:
+			# validation error
+			l2_valid, y_pred = __eval_decoded(model, fn_model, x_valid, y_valid, mean_diff, args, stats) #, x_avg)
+
+			# saving fn model
+			if __eval_loss(fn_model, l2_train, l2_test, args):
+				if not args['debug'] and args['do_prediction']:
+					#pass
+					__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, std_diff, stats, SUBACT, args)
 
 		#if not args['debug']:
 		#	with open(args['log_path'], 'a+') as f:

@@ -16,8 +16,8 @@ config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.8
 set_session(tf.Session(config=config))
 
-METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN', 'SH_RNN', 'HH_Seq2Seq_PC']
-OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN', 'SH_RNN']
+METHOD_LIST = ['test', 'Seq2Seq', 'C_RNN', 'VL_RNN', 'H_RNN', 'HH_RNN', 'H_Seq2Seq', 'HHH_RNN', 'SH_RNN', 'HH_Seq2Seq_PC', 'HHH_RNN_S']
+OUR_METHODS = ['H_RNN', 'HH_RNN', 'VL_RNN', 'HHH_RNN', 'SH_RNN', 'HHH_RNN_S']
 
 # Get data and information on the data
 
@@ -71,7 +71,7 @@ def __data_generator_random(data_dir, stats, args, b):
 	t = args['timesteps']
 	data = {}
 	sample_n = 0
-	actions = args['actions'].keys()
+	actions = args['test_action'].keys()
 
 	for f in glob.glob(data_dir+'*.npy'):
 		action_name =  __get_action_from_file(f)
@@ -100,7 +100,7 @@ def __data_generator_random(data_dir, stats, args, b):
 				x[s:e,:,-l:] = 0
 				if args['add_noise']:
 					x[s:e,:,-l:] = np.random.normal(0,args['noise_std'],x[s:e,:,-l:].shape)
-				x[s:e,:,-l+args['actions'][action_name]] = 1
+				x[s:e,:,-l+args['test_action'][action_name]] = 1
 
 		yield x
 
@@ -129,6 +129,10 @@ def __load_validation_data(data_dir, stats, args):
 
 			if args['supervised']:
 				x[s:e,:,-l+action_idx] = 1
+
+	idx = [i*8+j for i in range(len(args['actions'])) for j in range(8) if i in args['test_action'].values()]
+	print idx
+	x = x[idx]
 	return x
 
 # Get load and save path
@@ -212,12 +216,15 @@ def get_parse(mode):
 	ap.add_argument('-s', '--supervised', action='store_true', help='With action names')
 	ap.add_argument('-r', '--repeat_last', action='store_true', help='Repeat the last frame instead of setting to 0')
 	ap.add_argument('--action', required=False, help='Only load data with this action name', nargs = '*')
+	ap.add_argument('--test_action', required=False, help='Only test data with this action name', nargs = '*')
 	ap.add_argument('--add_noise',required=False, help='Add noise to the action name, indicates the standard deviation for the noise', default=0.0, type=float)
 	ap.add_argument('--random_embedding', action='store_true', help='Take a random embedding size of generator_size (for testing).')
 	ap.add_argument('--debug', action='store_true', help='Debug mode (no file saved on disk and view model summary)')
 	ap.add_argument('--no_save', action='store_true', help='Skip saving model when training, but save log file')
 
 	ap.add_argument('--do_classification', action='store_true', help='Train for classification (when using fn.py)')
+	ap.add_argument('--do_generation', action='store_true', help='Train for generation (when using fn.py)')
+
 	ap.add_argument('--ignore_global', action='store_true', help='Ignore global features')
 
 	args = vars(ap.parse_args())
@@ -265,10 +272,16 @@ def get_parse(mode):
 			sorted_actions = [a for a,_ in sorted_actions if a in args['action']]
 			assert len(sorted_actions) != 0
 			args['actions'] = {a:i for i,a in enumerate(sorted_actions)}
+		if args['test_action'] is not None:
+			args['test_action'] = {a:i for a,i in args['actions'].iteritems() if a in args['test_action']}
+			assert len(args['test_action'])
+		else:
+			args['test_action'] = args['actions']
+		print 'Testing on actions:',  args['test_action']
 
 	# model can do prediction and classification?
 	if mode == 'fn':
-		if not args['do_classification']:
+		if not args['do_classification'] and not args['do_generation']:
 			args['do_prediction'] = True
 		else:
 			args['do_prediction'] = False

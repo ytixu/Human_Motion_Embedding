@@ -69,7 +69,7 @@ def recover(x, stats):
 # error
 
 SHORT_TERM_IDX = [1,3,7,9]
-SHORT_N_LONG_TERM_IDX = [1,3,7,9,13,17,19,21,24]
+SHORT_N_LONG_TERM_IDX = [1,3,7,9,11,13,15,17,19,21,23,24]
 
 def l2_error(x1, x2, averaged=True):
 	'''
