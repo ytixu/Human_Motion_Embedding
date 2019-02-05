@@ -2,8 +2,9 @@
 
 ### Dependencies
 
-- Tensorflow 1.2.1
-- Keras 2.1.3
+- [Tensorflow](https://www.tensorflow.org/) 1.2
+- [Keras](https://keras.io/) 2.1
+- [Tqdm](https://github.com/noamraph/tqdm) (progress bar)
 
 ### Quickstart
 
@@ -28,3 +29,13 @@ cd src/utils
 python data_preprocessing.py
 ```
 Default conversion to euler angle. See input options for other parameterizations and for visualization of the motions.
+
+3. Run
+```bash
+python train.py -m VL_RNN
+```
+
+4. Plot results
+```bash
+python viz_training_curves.py -p ../../out/vl_rnn/<OUTPUT LOG FILE NAME>
+```

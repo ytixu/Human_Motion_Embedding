@@ -240,7 +240,7 @@ def euler2mat(ai, aj, ak, axes='sxyz'):
   return M
 
 def euler2rotmap(euler):
-  return euler2mat(euler[2], euler[1], euler[0])
+  return euler2mat(euler[0], euler[1], euler[2])
 
 #################################
 ####### Foward kinematics #######
@@ -299,7 +299,7 @@ def fkl( angles, parent, offset, rotInd, expmapInd ):
 
   return np.reshape( xyz, [-1] )
 
-def revert_coordinate_space(channels, R0, T0, mat_type='expmap'):
+def revert_coordinate_space(channels, R0, T0):
   """
   Bring a series of poses to a canonical form so they are facing the camera when they start.
   Adapted from
@@ -308,7 +308,6 @@ def revert_coordinate_space(channels, R0, T0, mat_type='expmap'):
     channels: n-by-99 matrix of poses
     R0: 3x3 rotation for the first frame
     T0: 1x3 position for the first frame
-    mat_type: parameterization of the matrix (added by ytixu)
   Returns
     channels_rec: The passed poses, but the first has T0 and R0, and the
                   rest of the sequence is modified accordingly.
@@ -322,23 +321,11 @@ def revert_coordinate_space(channels, R0, T0, mat_type='expmap'):
 
   # Loop through the passed posses
   for ii in range(n):
-    #### modified here
-    func = expmap2rotmat
-    if mat_type == 'euler':
-      func = euler2rotmap
-
-    R_diff = func( channels[ii, rootRotInd] )
-    #### end
+    R_diff = expmap2rotmat( channels[ii, rootRotInd] )
     R = R_diff.dot( R_prev )
-
-    #### modified here
-    if mat_type == 'euler':
-      channels_rec[ii, rootRotInd] = rotmat2euler(R)
-    else:
-    ####end
-      channels_rec[ii, rootRotInd], bad_quad = rotmat2expmap(R)
-      if bad_quad:
-        print ii
+    channels_rec[ii, rootRotInd], bad_quad = rotmat2expmap(R)
+    if bad_quad:
+      print ii
 
     T = T_prev + ((R_prev.T).dot( np.reshape(channels[ii,:3],[3,1]))).reshape(-1)
     channels_rec[ii,:3] = T
@@ -416,7 +403,42 @@ def sequence_expmap2euler(data):
       data[i,k:k+3] = rotmat2euler( expmap2rotmat( data[i,k:k+3] ))
   return data
 
-def sequence_something2xyz__(data, data_type='expmap'):
+def sequence_expmap2quater(data):
+  '''
+  Convert a sequence of exponential map to quaternion
+  '''
+  new_data = np.zeros((data.shape[0], 33*4))
+  for i in np.arange(data.shape[0]):
+    for j,k in enumerate(np.arange(3,97,3)):
+      new_data[i,j*4:(j+1)*4] = rotmat2quat( expmap2rotmat( data[i,k:k+3] ))
+  return new_data
+
+def sequence_quater2expmap(data, unormed=False):
+  '''
+  Convert a sequence of quaternion to exponential map
+  '''
+  new_data = np.zeros((data.shape[0], 99))
+  for i in np.arange(data.shape[0]):
+    for j,k in enumerate(np.arange(3,97,3)):
+      quat = data[i,j*4:(j+1)*4]
+      if unormed:
+        quat = quat / np.linalg.norm(quat)
+      new_data[i,k:k+3], _ = quat2expmap( quat )
+  return new_data
+
+def sequence_euler2expmap(data):
+  '''
+  Convert a sequence of euler angles to exponential map
+  '''
+  for i in np.arange(data.shape[0]):
+    for k in np.arange(3,97,3):
+      data[i,k:k+3], _ = rotmat2expmap( euler2rotmap( data[i,k:k+3] ))
+  return data
+
+def sequence_quater2euler(data, unormed=False):
+  return sequence_expmap2euler(sequence_quater2expmap(data, unormed))
+
+def sequence_expmap2xyz(data):
   '''
   Convert a sequence of exponential map or euler to euclidean space using FK
   Borrowed from
@@ -428,7 +450,7 @@ def sequence_something2xyz__(data, data_type='expmap'):
   xyz = np.zeros((nframes, 96))
 
   # Put them together and revert the coordinate space
-  data = revert_coordinate_space( data, np.eye(3), np.zeros(3), data_type )
+  data = revert_coordinate_space( data, np.eye(3), np.zeros(3) )
 
   # Compute 3d points for each frame
   parent, offset, rotInd, expmapInd = _some_variables()
@@ -437,11 +459,13 @@ def sequence_something2xyz__(data, data_type='expmap'):
 
   return xyz
 
-def sequence_expmap2xyz(data):
-  return sequence_something2xyz__(data)
-
 def sequence_euler2xyz(data):
-  return sequence_something2xyz__(data, 'euler')
+  data = sequence_euler2expmap(data)
+  return sequence_expmap2xyz(data)
+
+def sequence_quater2xyz(data):
+  data = sequence_quater2expmap(data)
+  return sequence_expmap2xyz(data)
 
 # For plotting poses
 # relevant_coords = [0, 1, 2, 3, 6, 7, 8, 12, 13, 14, 15, 17, 18, 19, 25, 26, 27]
@@ -458,9 +482,8 @@ def animate(xyz):
   ax = plt.gca(projection='3d')
   ob = viz.Ax3DPose(ax)
 
-  # modify this to increase the number of frames to animate
-  for i in range(min(150, xyz.shape[0])):
+  for i in range(xyz.shape[0]):
     ob.update( xyz[i,:] )
     plt.show(block=False)
     fig.canvas.draw()
-    plt.pause(0.01)
+    plt.pause(0.002)

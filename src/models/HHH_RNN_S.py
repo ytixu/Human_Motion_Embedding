@@ -1,0 +1,110 @@
+import numpy as np
+
+import keras.layers as K_layer
+import keras.backend as K_backend
+from keras.models import Model
+
+import abs_model
+from utils import pattern_matching, embedding_utils, formatter
+import HH_RNN
+
+class HHH_RNN_S(HH_RNN.HH_RNN):
+
+	def make_model(self):
+		self.timesteps_out = 10
+		self.partial_latent_dim = 514 #self.latent_dim/2
+
+		inputs = K_layer.Input(shape=(self.timesteps, self.input_dim))
+		reshaped = K_layer.Reshape((self.unit_n, self.unit_t, self.input_dim))(inputs)
+		encode_reshape = K_layer.Reshape((self.unit_n, self.partial_latent_dim))
+		encode_1 = abs_model.RNN_UNIT(self.partial_latent_dim)
+		encode_2 = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True)
+
+		def encode_partials(seq):
+			encoded = [None]*self.unit_n
+			for i in range(self.unit_n):
+				rs = K_layer.Lambda(lambda x: x[:,i], output_shape=(self.unit_t, self.input_dim))(seq)
+				encoded[i] = encode_1(rs)
+			return encode_reshape(K_layer.concatenate(encoded, axis=1))
+
+		encoded = encode_partials(reshaped)
+		encoded = encode_2(encoded)
+
+		z = K_layer.Input(shape=(self.latent_dim,))
+		decode_repeat = K_layer.RepeatVector(1)
+		decode_units = abs_model.RNN_UNIT(self.latent_dim, return_sequences=True, return_state=True) #, activation=self.activation)
+
+		decode_dense_1 = K_layer.Dense(self.partial_latent_dim, activation=self.activation)
+		decode_dense_2 = K_layer.Dense(self.output_dim, activation=self.activation)
+		#decode_repete_angles = K_layer.Lambda(lambda x:K_backend.repeat_elements(x, self.unit_t, 1), output_shape=(self.timesteps, self.output_dim))
+
+		#decode_repete = K_layer.RepeatVector(self.timesteps)
+		#decode_residual_1 = abs_model.RNN_UNIT(self.output_dim*4, return_sequences=True, activation=self.activation)
+		decode_residual_2 = abs_model.RNN_UNIT(self.partial_latent_dim, return_sequences=True, return_state=True, activation=self.activation)
+
+		def sampling_base(inputs, t, n, dec_fn, states=None):
+			all_outputs = [None]*t
+			for i in range(t):
+				if i == 0:
+					inputs = decode_repeat(inputs)
+				if states is None:
+					outputs, states = dec_fn(inputs)
+				else:
+					outputs, states = dec_fn(inputs, initial_state=states)
+				all_outputs[i] = outputs
+				inputs = outputs
+			outputs = K_layer.Lambda(lambda x: K_layer.concatenate(x, axis=1))(all_outputs)
+			return outputs, states
+
+		def decode_angle(e):
+			angle,_ = sampling_base(e, self.unit_n, self.partial_latent_dim, decode_units)
+			angle = K_layer.TimeDistributed(decode_dense_1)(angle)
+			residual = [None]*self.unit_n
+			states = None
+			for i in range(self.unit_n):
+				inputs = K_layer.Lambda(lambda x: x[:,i])(angle)
+				residual[i], states = sampling_base(inputs, self.unit_t, self.output_dim, decode_residual_2, states)
+			angle = K_layer.Lambda(lambda x: K_layer.concatenate(x, axis=1))(residual)
+			angle = K_layer.TimeDistributed(decode_dense_2)(angle)
+			angle = K_layer.Activation(self.activation)(angle)
+			return angle
+
+		angles = [None]*len(self.sup_hierarchies)
+		for i,k in enumerate(self.sup_hierarchies):
+			e = K_layer.Lambda(lambda x: x[:,k], output_shape=(self.latent_dim,))(encoded)
+			angles[i] = decode_angle(e)
+
+		decoded =  K_layer.concatenate(angles, axis=1)
+		decoded_ = decode_angle(z)
+
+		self.encoder = Model(inputs, encoded)
+		self.decoder = Model(z, decoded_)
+		self.model = Model(inputs, decoded)
+
+	def back_load(self, load_path):
+		self.timesteps = 60
+                self.timesteps_in = 50
+                self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
+                self.unit_n = self.timesteps/self.unit_t
+                self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
+		self.make_model()
+
+		super(HHH_RNN, self).load(load_path)
+
+		temp_weights = [layer.get_weights() for layer in self.model.layers]
+		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
+
+		self.timesteps = 70
+		self.timesteps_in = 60
+		self.timesteps_out = 10
+		return 
+		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
+		self.unit_n = self.timesteps/self.unit_t
+		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
+
+		self.make_model()
+		for layer in self.model.layers:
+			w = layer.get_weights()
+			if len(w) > 0:
+				layer.set_weights(temp_weights[tuple([w[i].shape for i in range(len(w))])])
+
