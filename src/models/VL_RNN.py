@@ -160,9 +160,48 @@ class VL_RNN(abs_model.AbstractModel):
 
 		# from motion modality to motion+name modality
 		kwargs['partial_encode_idx'] = self.timesteps-1
-		kwargs['modality_partial'] = 'motion'
-		kwargs['modality_complete'] = 'both'
+		kwargs['modality_partial'] = self.embedding['motion']
+		kwargs['modality_complete'] = self.embedding['both']
 		kwargs['return_seq_fn'] = lambda x: x[:,:,-self.name_dim:]
 
 		# default using ADD method for pattern matching
-		return pattern_matching.raw_match(x, self, **kwargs)
+		c = pattern_matching.raw_match(x, self, **kwargs)
+		print c
+		return c
+
+
+	def back_load(self, load_path):
+		self.timesteps = 60
+		self.timesteps_in = 10
+		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
+		self.unit_n = self.timesteps/self.unit_t
+		self.make_model()
+
+		super(VL_RNN, self).load(load_path)
+
+		temp_weights = [layer.get_weights() for layer in self.model.layers]
+		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
+
+		self.timesteps = 60
+		self.timesteps_in = 10
+		self.timesteps_out = 50
+		#return
+		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
+		self.unit_n = self.timesteps/self.unit_t
+		#self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
+
+		self.make_model()
+		for layer in self.model.layers:
+			w = layer.get_weights()
+			if len(w) > 0:
+				layer.set_weights(temp_weights[tuple([w[i].shape for i in range(len(w))])])
+
+
+
+
+
+
+
+
+
+
