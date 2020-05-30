@@ -29,7 +29,7 @@ AVERAGE_OVER = 3
 
 LABELS = [['Train','Test'],
 			['80ms', '160ms', '320ms', '400ms'],
-			['Mean STD (x10)','STD STD (x10)']]
+			['Mean STD','STD STD']]
 FILLED_MARKER = ['o', 'v', '^', '*']
 LINESTYLES = ['-', '--', ':']
 COLOR_STYLE = ['#1f77b4','#ff7f0e','#2ca02c']
@@ -111,8 +111,20 @@ def plot_training_curve(args):
 			mean_class = np.mean(data[i][1])
 			data[i][1] = [data[i][1][j] for j in top_3_classes] + [mean_class]
 
-	fig = plt.figure()
-	ax = plt.subplot(111)
+	# fig = plt.figure()
+	# ax = plt.subplot(111)
+
+	f, ax = plt.subplots(2, 1, figsize=(7,5),
+						# gridzspec_kw={'wspace':0.03, 'hspace':0.03},
+						# squeeze=True,
+						sharex=True)
+	# for r in range(num_rows):
+	# 	for c in range(num_cols):
+	# 		image_index = r * num_cols + c
+	# 		ax[c].axis("off")
+	# 		ax[c].imshow(imgs[image_index], cmap='gray')
+	# plt.show()
+	# plt.close()
 
 	for i in range(key): # for train-test, valid, std_mean-std_std
 		if i == 2:
@@ -124,17 +136,26 @@ def plot_training_curve(args):
 			if np.mean(line) == 0: # skip std for Seq2Seq and H_Seq2Seq
 				continue
 			x = range(0,len(line)*10,10)
-			ax.plot(x, line, label=LABELS[i][j],
+			ax[i].plot(x, line, label=LABELS[i][j],
 				marker=FILLED_MARKER[j], linestyle=LINESTYLES[i],
 				c=COLOR_STYLE[i], linewidth=3, markersize=10)
 
-	# Shrink current axis's height by 10% on the bottom
-	box = ax.get_position()
-	ax.set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
-	# Put a legend below current axis
-	ax.legend()#loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4)
-	ax.set_xlabel('Epoch')
-	ax.set_ylabel('Mean angle error')
+		# Shrink current axis's height by 10% on the bottom
+		box = ax[i].get_position()
+		ax[i].set_position([box.x0, box.y0 + box.height * 0.1, box.width, box.height * 0.9])
+		# Put a legend below current axis
+		ax[i].legend()#loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=4)
+		ax[i].grid(True, color='#aaaaaa', linestyle='--', linewidth=1)
+		if i == 2:
+			ax[i].set_ylabel('Value')
+		elif i == 1:
+			ax[i].set_xlabel('Epoch')
+			ax[i].set_ylabel('Mean angle error')
+			ax[i].set_title('Prediction error using vector addition')
+		elif i == 0:
+			ax[i].set_title('Autoencoding error')
+			ax[i].set_xlabel('Epoch')
+			ax[i].set_ylabel('L2 distance')
 
 	# plt.suptitle(name)
 	plt.suptitle('ADD: %.2f, %.2f, %.2f, %.2f' % tuple(add_prf))

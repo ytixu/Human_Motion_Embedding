@@ -29,7 +29,7 @@ def __eval(model, x, y, args, stats):
 	y_pred = model.autoencode(x)
 	if y_pred.shape[-1] != len(args['actions']): # TODO
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
-	print y_pred.shape, y.shape
+	# print y_pred.shape, y.shape
 	return np.mean(utils.l2_error(y_pred, y))
 
 def __eval_pred(model, x, y, args, stats):
