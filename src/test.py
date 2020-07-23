@@ -12,6 +12,7 @@ from sklearn import cross_validation
 from utils import parser, utils
 from models.utils import viz_embedding, pattern_matching, embedding_utils, formatter
 import viz_2d_poses as viz_poses
+import viz_3d_poses
 
 def __load_embeddding(model, data_iter, args, **kwargs):
 	stats = args['input_data_stats']
@@ -25,16 +26,17 @@ def __load_embeddding(model, data_iter, args, **kwargs):
 			break # this gives a random sample of the embedding with the data_iter size
 
 def __interpolate(model, stats, args):
-	for i in range(10):
+	for i in range(1):
 		# get 2 random vectors in embedding
 		sample_set = model.embedding[model.timesteps-1]
-		zs = sample_set[np.random.choice(sample_set.shape[0], 2, replace=False)]
+		rand_samples = np.array([7239,10686]) #np.random.choice(sample_set.shape[0], 2, replace=False)
+		zs = sample_set[rand_samples]
 		# interpolate
 		itp = embedding_utils.interpolate(zs[0], zs[1])
 		# decode everything
 		itp = np.concatenate([zs[:1], itp], axis=0)
 		itp = np.concatenate([itp, zs[1:]], axis=0)
-		x = model.decode(itp)[:,range(0,model.timesteps,3)]
+		x = model.decode(itp)
 		x = utils.unormalize(x, stats, args['normalization_method'])
 		# visualize
 		titles = ['']*itp.shape[0]
@@ -44,7 +46,18 @@ def __interpolate(model, stats, args):
 			'parameterization':stats['parameterization'],
 			'title':'Interpolation %d'%i
 		}
-		viz_poses.plot_batch(x, stats, args, **kwargs)
+		viz_poses.plot_batch(x[:,range(0,model.timesteps,3)], stats, args, **kwargs)
+
+		#new_motion = np.zeros((model.timesteps*3+30, x.shape[-1]))
+		#new_motion[10:10+model.timesteps] = x[0]
+		#new_motion[-20-model.timesteps:-20] = x[-1]
+		#new_motion[model.timesteps+10:2*model.timesteps+10] = np.array([x[j+1,model.timesteps-j-1] for j in range(model.timesteps)])
+		#new_motion[:10] = x[0,0]
+		#new_motion[-20:] = x[-1,-1]
+		#kwargs={'param_type':stats['parameterization'], 
+		#	'stats':stats}
+
+		#viz_3d_poses.animate_motion(new_motion, 'interpolation_animation_%d_'%i+'_'.join(map(str, rand_samples.tolist())), args['output_dir'], **kwargs)
 
 def __print_scores(scores, supervised):
 	actions = scores[scores.keys()[0]].keys()
@@ -219,7 +232,7 @@ if __name__ == '__main__':
 	modalities = (model.timesteps_in-1, model.timesteps-1,
 				  model.timesteps_in-1, model.timesteps-1)
 	args['output_dir'] = output_dir + '_pattern_matching'
-	__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
+	#__compare_pattern_matching(xp_valid, valid_data, model, modalities, args)
 
 	if args['do_classification']:
 		# format validation data

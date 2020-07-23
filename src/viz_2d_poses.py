@@ -5,10 +5,10 @@ from utils import converter, utils
 
 # same as https://github.com/una-dinosauria/human-motion-prediction/blob/master/src/viz.py#L21
 M_POSE_LINES = {'r':[0,1,2,3],
-		'g':[0,6,7,8],
-		'b':[0,12,13,14,15],
-		'm':[13,17,18,19],
-		'k':[13,25,26,27]}
+				'g':[0,6,7,8],
+				'b':[0,12,13,14,15],
+				'm':[13,17,18,19],
+				'k':[13,25,26,27]}
 
 def __add_line(plt_canvas, coords, color, size, s=0):
 	coords[:,1] = coords[:,1] + 350*s

@@ -9,11 +9,12 @@ import h5py
 from utils import parser, utils
 from models.fn import FN
 import viz_2d_poses as viz_poses
+import viz_3d_poses
 
 LOSS = 10000
 CV_SPLIT = 0.2
 FAIL_COUNT = 0
-SUBACT = 1
+SUBACT = 3
 
 martinez_samples = '../../human-motion-prediction/samples.h5'
 
@@ -99,7 +100,7 @@ def __eval(fn_model, x, y, args, stats):
 	x_pred = fn_model.predict(x)
 	return utils.l2_error(x_pred, y, averaged=True)
 
-def __eval_generation(model, fn_model, x_test, diff, std_diff, args, stats):
+def __eval_generation(model, fn_model, x_test, diff, std_diff, args, stats, plot_3D=False):
 	x = np.reshape(np.tile(np.eye(15, model.input_dim, k=model.input_dim-15), model.timesteps), (15, model.timesteps, -1))
 	x = model.encode(x, model.timesteps-1)
 
@@ -116,7 +117,7 @@ def __eval_generation(model, fn_model, x_test, diff, std_diff, args, stats):
 	x_pred = utils.unormalize(x_pred, stats, args['normalization_method'])
 
 	x_add = model.decode(x+diff)
-        x_add = utils.unormalize(x_add, stats, args['normalization_method'])
+	x_add = utils.unormalize(x_add, stats, args['normalization_method'])
 
 	x_center = model.decode(np.array([np.mean(x_test, 0)]))
 	x_center = utils.unormalize(x_center, stats, args['normalization_method'])
@@ -124,12 +125,23 @@ def __eval_generation(model, fn_model, x_test, diff, std_diff, args, stats):
 	titles = ['fn', 'noise-50', 'noise-100', 'add', 'center']
 
 	for action, i in args['actions'].iteritems():
+		if plot_3D:
+			kwargs = {'start_seq':np.array([]), 
+				'true_seq':x_pred[i], #y_true[idx], 
+				'pred_seq':x_rand_2[i], 
+				'pred_name':'+100% Noise', #'Our-FN', 
+				'baseline_seq':x_rand_1[i],  #m_pred[action], 
+				'baseline_name': '+50% Noise'} #'Martinez et al.'}
+			viz_3d_poses.animate_compare(action, stats, args['output_dir'], param_type=stats['parameterization'], **kwargs)
+			continue
+
 		kwargs = {'row_titles':titles,
 			'parameterization':stats['parameterization'],
 			'title':'Generation-fn-add-%s' % (action)
-                }
+			}
 		x_ = np.array([x_pred[i], x_rand_1[i], x_rand_2[i], x_add[i], x_center[0]])
 		viz_poses.plot_batch(x_[:,::2], stats, args, **kwargs)
+
 
 
 
@@ -171,8 +183,9 @@ def __plot_sequences(model, y_true, m_pred, x, diff, std_diff, stats, args):
 	for i in range(4,8):
 		__plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, i, args)
 
-def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, subact, args):
-	for action,k in args['actions'].iteritems():
+def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, subact, args, plot_3D=False, x_true=None):
+	
+	for action,k in {'walking': 0, 'takingphoto': 11, 'eating': 1, 'sitting': 9, 'discussion': 3, 'walkingdog': 13, 'greeting': 5, 'walkingtogether': 14, 'phoning': 6, 'posing': 7, 'smoking': 2, 'waiting': 12, 'sittingdown': 10}.iteritems(): # args['actions'].iteritems():
 		if len(m_pred[action]) == 0:
 			continue
 		print action,k
@@ -186,20 +199,34 @@ def __plot_sequence(model, y_true, m_pred, x, diff, std_diff, stats, subact, arg
 		titles[1] = 'Res-Seq2Seq'
 		for i in range(1,3):
 			titles[2+i] = 'Pertube-%d'%((3-i)*2)
-			z[i] = np.random.normal(z_pred[0], std_diff*i)
+			z[i] = np.random.normal(z_pred[0], std_diff*i/2.0)
 		z[-1] = x[idx]+diff
 
 		y_pred = model.decode(z)
 		y_pred = utils.unormalize(y_pred, stats, args['normalization_method'])
 
+		if plot_3D:
+			kwargs = {'start_seq':x_true[idx], 
+				'true_seq':y_pred[0,model.timesteps_in:], #y_true[idx], 
+				'pred_seq':y_pred[2,model.timesteps_in:], 
+				'pred_name':'+100% Noise', #'Our-FN', 
+				'baseline_seq':y_pred[1,model.timesteps_in:],  #m_pred[action], 
+				'baseline_name': '+50% Noise'} #'Martinez et al.'}
+			viz_3d_poses.animate_compare(action, stats, args['output_dir'], param_type=stats['parameterization'], **kwargs)
+			continue
+
 		kwargs = {'row_titles':titles,
 			'parameterization':stats['parameterization'],
 			'title':'FN %s-%d' % (action, subact)
 		}
-		print y_pred[:,model.timesteps_in:].shape
+		# print y_pred[:,model.timesteps_in:].shape
 		x_ = np.concatenate([[y_true[idx], m_pred[action]], y_pred[:,model.timesteps_in:]], axis=0) #.reshape((6, y_true.shape[1], -1))
-		print x_.shape
+		# print x_.shape
 		viz_poses.plot_batch(x_[:,::2], stats, args, **kwargs)
+
+
+
+
 
 
 def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
@@ -209,9 +236,9 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 		pass
 
 	elif args['do_prediction']:
-		x_valid, y_valid = model.format_data(valid_data, for_prediction=True)
+		x_valid_orig, y_valid = model.format_data(valid_data, for_prediction=True)
 		#x_valid = x_valid[:,:model.timesteps_in]
-		x_valid = utils.normalize(x_valid, stats, args['normalization_method'])
+		x_valid = utils.normalize(x_valid_orig, stats, args['normalization_method'])
 		# xp_valid[:,:,-model.name_dim] = 0
 		x_valid = model.encode(x_valid, model.timesteps_in-1)
 
@@ -263,7 +290,7 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 		print 'MEAN TEST', l2_test
 
 		if args['do_generation']:
-			__eval_generation(model, fn_model, y, mean_diff, std_diff, args, stats)
+			__eval_generation(model, fn_model, y, mean_diff, std_diff, args, stats, plot_3D=True)
 
 		else:
 			# validation error
@@ -273,7 +300,8 @@ def train(model, fn_model, data_iter, test_iter, valid_data, stats, args):
 			if __eval_loss(fn_model, l2_train, l2_test, args):
 				if not args['debug'] and args['do_prediction']:
 					#pass
-					__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, std_diff, stats, SUBACT, args)
+					__plot_sequence(model, y_valid, m_data, x_valid, mean_diff, 
+									std_diff, stats, SUBACT, args, plot_3D=True, x_true=x_valid_orig[:,:model.timesteps_in])
 
 		#if not args['debug']:
 		#	with open(args['log_path'], 'a+') as f:

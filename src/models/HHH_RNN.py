@@ -65,11 +65,11 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		self.model = Model(inputs, decoded)
 
 	def back_load(self, load_path):
-		self.timesteps = 40
-                self.timesteps_in = 20
-                self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
-                self.unit_n = self.timesteps/self.unit_t
-                self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
+		self.timesteps = 60
+		self.timesteps_in = 50
+		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
+		self.unit_n = self.timesteps/self.unit_t
+		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]
 		self.make_model()
 
 		super(HHH_RNN, self).load(load_path)
@@ -77,10 +77,10 @@ class HHH_RNN(HH_RNN.HH_RNN):
 		temp_weights = [layer.get_weights() for layer in self.model.layers]
 		temp_weights = {tuple([w[i].shape for i in range(len(w))]): w for w in temp_weights if len(w) > 0}
 
-		self.timesteps = 40
+		self.timesteps = 60
 		self.timesteps_in = 10
-		self.timesteps_out = 30
-		#return
+		self.timesteps_out = 50
+		# return
 		self.hierarchies = range(self.unit_t-1, self.timesteps, self.unit_t)
 		self.unit_n = self.timesteps/self.unit_t
 		self.sup_hierarchies = [self._get_sup_index(h) for h in self.hierarchies]

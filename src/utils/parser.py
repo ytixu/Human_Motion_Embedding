@@ -131,7 +131,7 @@ def __load_validation_data(data_dir, stats, args):
 				x[s:e,:,-l+action_idx] = 1
 
 	idx = [i*8+j for i in range(len(args['actions'])) for j in range(8) if i in args['test_action'].values()]
-	print idx
+	# print idx
 	x = x[idx]
 	return x
 
@@ -193,21 +193,21 @@ def get_parse(mode):
 	ap.add_argument('--test_size', required=False, help='Size of the test bath', default=100, type=int)
 	ap.add_argument('--embedding_size', required=False, help='Size of the embedding for testing', default=1000, type=int)
 	whmtd_list = ['norm_pi', 'norm_std', 'norm_max', 'none']
-	ap.add_argument('-n', '--normalization_method', required=False, help='Normalization method.', default='norm_pi', choices=whmtd_list)
+	ap.add_argument('-n', '--normalization_method', required=False, help='Normalization method.', default='norm_std', choices=whmtd_list)
 
 	ap.add_argument('-P', '--load_path', required=False, help='Model path')
 	ap.add_argument('--save_path', required=False, help='Model save path')
 	ap.add_argument('--log_path', required=False, help='Log file for loss history')
 
-	ap.add_argument('-t', '--timesteps', required=False, help='Total timestep size', default=40, type=int)
+	ap.add_argument('-t', '--timesteps', required=False, help='Total timestep size', default=60, type=int)
 	ap.add_argument('-o', '--timesteps_out', required=False, help='Number of output frames (so input size = total timsteps - ouput size)', default=10, type=int)
 	ap.add_argument('--unit_timesteps', required=False, help='Number of timesteps encoded at the first level', default=10, type=int)
 	ap.add_argument('--hierarchies', required=False, help='Only encode for these length indices', nargs = '*')
 	ap.add_argument('--epoch', required=False, help='Number of epoch for training', default=1000, type=int)
 	ap.add_argument('--batch_size', required=False, help='Batch size', default=64, type=int)
-	ap.add_argument('-e', '--latent_dim', required=False, help='Embedding size', default=800, type=int)
+	ap.add_argument('-e', '--latent_dim', required=False, help='Embedding size', default=1500, type=int)
 	ap.add_argument('-L', '--loss_func', required=False, help='Loss function name', default='mean_absolute_error')
-	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Adam')
+	ap.add_argument('-O', '--optimizer', required=False, help='Optimizer and parameters (use classes in Keras.optimizers)', default='Nadam')
 	ap.add_argument('-l', '--learning_rate', required=False, help='The learning rate', default=0.001, type=float)
 	ap.add_argument('-d', '--decay', required=False, help='The decay factor of the learning rate (decay=1 is no decay)', default='0.95', type=float)
 	ap.add_argument('--decay_after', required=False, help='The number of epoch before decaying', default='10', type=int)
